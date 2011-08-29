@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+
+<project name="CoojaTest" default="jar" basedir=".">
+  <property name="cooja" value="../.."/>
+  <property name="archive" value="coojatest.jar"/>
+
+  <target name="init">
+    <tstamp/>
+  	
+    <path id="build.classpath">
+  	      <pathelement location="lib/scala-library.jar"   />
+  	      <pathelement location="build"   />
+  	</path>
+  	<taskdef resource="scala/tools/ant/antlib.xml">
+  	      <classpath>
+  	        <pathelement location="lib/scala-compiler.jar"   />
+  	        <pathelement location="lib/scala-library.jar"   />
+  	      </classpath>
+  	</taskdef>
+  </target>
+
+  <target name="compile" depends="init">
+    <mkdir dir="build"/>
+    <scalac srcdir="scala" destdir="build" deprecation="yes">
+      <classpath>
+        <pathelement location="${cooja}/dist/cooja.jar"/>
+      	<pathelement location="${cooja}/lib/jdom.jar"/>
+        <pathelement location="${cooja}/lib/log4j.jar"/>
+      	<pathelement location="${cooja}/apps/mspsim/lib/mspsim.jar"/>
+        <pathelement location="${cooja}/apps/mspsim/lib/cooja_mspsim.jar"/>
+      	<pathelement location="lib/scala-reactive.jar"/>
+      	<pathelement location="lib/scala-library.jar"/>
+      	<pathelement location="lib/scala-compiler.jar"/>
+      </classpath>
+    </scalac>
+  </target>
+	
+
+  <target name="clean" depends="init">
+    <delete dir="build" file="${archive}"/>
+  </target>
+	
+	
+  <target name="jar" depends="compile">
+	<jar destfile="${archive}" basedir="build" />
+  </target>
+
+</project>
