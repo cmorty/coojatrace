@@ -35,6 +35,18 @@ class RichMote(val mote: Mote) {
   def leds = interface(classOf[LED])
   def radio = interface(classOf[Radio])
   // ...
+  
+  def memory: RichMoteMemory = throw new Exception("Unsupported for this mote type")
+  def cpu: RichCPU = throw new Exception("Unsupported for this mote type")
+  
+  lazy val varAdresses = memory.memory.getVariableNames.map(name => (memory.memory.getVariableAddress(name), name)).toMap
+  lazy val currentProcess = memory.intVar("process_current").map(addr => varAdresses(addr) + " (0x" + "%X".format(addr) + ")")
+}
+object RichMote {
+  var conversions = List[PartialFunction[Mote, RichMote]]()
+  val defaultConversion: PartialFunction[Mote, RichMote] = { case m: Mote => new RichMote(m) }
+
+  def apply(mote: Mote):RichMote = conversions.find(_.isDefinedAt(mote)).getOrElse(defaultConversion).apply(mote)
 }
 
 

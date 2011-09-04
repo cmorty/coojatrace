@@ -8,15 +8,17 @@ import se.sics.cooja.coojatest.wrappers._
 import se.sics.cooja.mspmote._ 
 
 package object mspwrappers {
-  implicit def mspMoteToMspRichMote(m: Mote) = m match {
-    case mm: MspMote => new MspRichMote(mm)
+  implicit def mspMote2RichMote(mm: MspMote) = new MspRichMote(mm)
+    
+  def register() {
+    RichMote.conversions ::= { case mm: MspMote => mspMote2RichMote(mm) }
   }
 }
 
 package mspwrappers {
   class MspRichMote(mote: MspMote) extends RichMote(mote) {
-    lazy val memory = new MspMoteRichMemory(mote)
-    lazy val cpu = new MspMoteRichCPU(mote)
+    override lazy val memory = new MspMoteRichMemory(mote)
+    override lazy val cpu = new MspMoteRichCPU(mote)
   }
   
   

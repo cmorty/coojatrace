@@ -8,16 +8,21 @@ import se.sics.cooja.coojatest.wrappers._
 import se.sics.cooja.contikimote._
 import se.sics.cooja.interfaces._
 
+
+
+
 package object contikiwrappers {
-  implicit def contikiMoteToMspRichMote(m: Mote) = m match {
-    case cm: ContikiMote => new ContikiRichMote(cm)
+  implicit def contikiMote2RichMote(cm: ContikiMote) = new ContikiRichMote(cm)
+  
+  def register() {
+    RichMote.conversions ::= { case cm: ContikiMote => contikiMote2RichMote(cm) }
   }
 }
 
 package contikiwrappers {
 
 class ContikiRichMote(mote: ContikiMote) extends RichMote(mote) {
-  lazy val memory = new ContikiMoteRichMemory(mote)
+  override lazy val memory = new ContikiMoteRichMemory(mote)
 }
 
 

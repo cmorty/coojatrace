@@ -22,7 +22,7 @@ object Conversions {
   import se.sics.cooja.interfaces._
 
   implicit def simToRichSim(s: Simulation) = new RichSimulation(s)
-  implicit def moteToRichMote(m: Mote) = new RichMote(m)
+  implicit def moteToRichMote(m: Mote) = RichMote(m)
   implicit def ledToRichLED(i: LED) = new RichLED(i)
   implicit def radioToRichRadio(r: Radio) = new RichRadio(r)
     
@@ -39,7 +39,7 @@ object Conversions {
 @PluginType(PluginType.SIM_PLUGIN)
 class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", gui, false) {
   val logger = org.apache.log4j.Logger.getLogger(this.getClass)
-
+  
   // Aufteilung
   val grid = new GridLayout(0,2)
   setLayout(grid)
@@ -70,23 +70,18 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     def jarPathOfClass(className: String) = {
       val resource = className.split('.').mkString("/", "/", ".class")
   	  val path = getClass.getResource(resource).getPath
-  	  logger.debug("path of class " + className + " is " + path)
   	  val indexOfFile = path.indexOf("file:")
   	  val indexOfSeparator = path.lastIndexOf('!')
   	  path.substring(indexOfFile, indexOfSeparator)
     }
     
-    // TODO: classPath von Cooja bekommen?
     val classes = scala.List(
-      "scala.tools.nsc.Interpreter", "scala.ScalaObject" ,
-      "org.apache.log4j.Logger", "org.jdom.Element",
-      "reactive.EventSource",
-      "se.sics.cooja.coojatest.CoojaTestPlugin",
-      "se.sics.mspsim.Main", "se.sics.cooja.mspmote.MspMote"
+      "org.apache.log4j.Logger", "org.jdom.Element"
     )
     
-    settings.bootclasspath.value = classes.map(jarPathOfClass(_)).mkString(":")
-    logger.debug("Scala Bootclasspath: " + settings.bootclasspath.value) // DEBUG
+    val coojaLibs = classes.map(jarPathOfClass(_))
+    val dynamicLibs = sim.getGUI.projectDirClassLoader.asInstanceOf[java.net.URLClassLoader].getURLs.map(_.toString.replace("file:", "")).toList
+    settings.bootclasspath.value = (coojaLibs ::: dynamicLibs).mkString(":")
     
     new Interpreter(settings, pwriter)
   }
@@ -119,7 +114,9 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
         import se.sics.cooja.coojatest.operators.Operators._
 
         import se.sics.cooja.coojatest.contikiwrappers._
+    	se.sics.cooja.coojatest.contikiwrappers.register()
         import se.sics.cooja.coojatest.mspwrappers._
+    	se.sics.cooja.coojatest.mspwrappers.register()
       """)
   
       interpreter.bind("sim", sim.getClass.getName, sim)
@@ -146,13 +143,28 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     }
   })
 
-  add(scriptLabel)
+  //add(scriptLabel)
   add(scriptButton)
   add(flushButton)
   add(new JScrollPane(scriptCode))
   add(new JScrollPane(scriptResult))
   
-  setSize(300,100)
+  setSize(500,500)
+  
+  // Reload notwendig?
+  if(true) { // TODO
+    val s1 = "Reload"
+    val s2 = "Ignore"
+    val options = Array[Object](s1, s2)
+    val n = JOptionPane.showOptionDialog(
+              GUI.getTopParentContainer(),
+              "The CoojaTest plugin was loaded after other plugins. This can load to classloader inconsistencies.\nDo you want to reload the simulation?",
+              "Reload simulation?", JOptionPane.YES_NO_OPTION,
+              JOptionPane.QUESTION_MESSAGE, null, options, s1);
+    if (n == JOptionPane.YES_OPTION) {
+      sim.getGUI.reloadCurrentSimulation(false)
+    }
+  }
   
   override def closePlugin() { 
     logger.debug("closePlugin() called")
