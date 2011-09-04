@@ -69,10 +69,10 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     
     def jarPathOfClass(className: String) = {
       val resource = className.split('.').mkString("/", "/", ".class")
-  	  val path = getClass.getResource(resource).getPath
-  	  val indexOfFile = path.indexOf("file:")
-  	  val indexOfSeparator = path.lastIndexOf('!')
-  	  path.substring(indexOfFile, indexOfSeparator)
+      val path = getClass.getResource(resource).getPath
+      val indexOfFile = path.indexOf("file:")
+      val indexOfSeparator = path.lastIndexOf('!')
+      path.substring(indexOfFile, indexOfSeparator)
     }
     
     val classes = scala.List(
@@ -86,23 +86,13 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     new Interpreter(settings, pwriter)
   }
   
-  // Flush Button
-  val flushButton = new JButton("flush");
-  flushButton.addActionListener(new ActionListener() {
-    def actionPerformed(e: ActionEvent) {
-      interpreter.interpret("logdestination.stream.flush()")
-    } 
-  })
-      
   // Run Button
   val scriptButton = new JButton("run");
   scriptButton.addActionListener(new ActionListener() {
     def actionPerformed(e: ActionEvent) {
       pwriter.flush()
       interpreter.reset()
-      Rules.assertions = Nil
-      Rules.logrules = Nil
-      
+      rules.reset()
 
       interpreter.interpret("""
         import se.sics.cooja._
@@ -110,7 +100,7 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
         import reactive._
         import se.sics.cooja.coojatest.Conversions._
         import se.sics.cooja.coojatest.magicsignals.MagicSignals._
-        import se.sics.cooja.coojatest.Rules._
+        import se.sics.cooja.coojatest.rules._
         import se.sics.cooja.coojatest.operators.Operators._
 
         import se.sics.cooja.coojatest.contikiwrappers._
@@ -120,13 +110,11 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
       """)
   
       interpreter.bind("sim", sim.getClass.getName, sim)
-      interpreter.bind("pwriter", pwriter.getClass.getName, pwriter)
       
       interpreter.interpret("""
-        implicit val theSimulation = sim
-        implicit val logdestination = new se.sics.cooja.coojatest.LogDestination(pwriter)
-        implicit val observing = new Observing {}
-        implicit val dl = new se.sics.cooja.coojatest.magicsignals.DynDepLog
+        implicit val _theSimulation = sim
+        implicit val _observing = new Observing {}
+        implicit val _deplog = new se.sics.cooja.coojatest.magicsignals.DynDepLog
       """)
 	
       scriptResult.setText("")
@@ -145,7 +133,6 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
 
   //add(scriptLabel)
   add(scriptButton)
-  add(flushButton)
   add(new JScrollPane(scriptCode))
   add(new JScrollPane(scriptResult))
   
