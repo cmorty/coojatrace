@@ -2,12 +2,20 @@ package se.sics.cooja.coojatest.wrappers
 
 import reactive._
 
-import scala.collection.JavaConverters._
-
 import java.util.{Observable, Observer}
 
 import se.sics.cooja._
 import se.sics.cooja.interfaces._
+
+import se.sics.cooja.coojatest.interfacewrappers._
+
+
+
+object Conversions {
+  implicit def simToRichSim(s: Simulation) = new RichSimulation(s)
+  implicit def moteToRichMote(m: Mote) = RichMote(m)
+  implicit def radioMediumToRichRadioMedium(rm: RadioMedium) = new RichRadioMedium(rm)
+}
 
 
 
@@ -21,21 +29,12 @@ class RichSimulation(val sim: Simulation) {
 
 trait RichCPU  {
   def register(name: String): Signal[Int]
-  def stackptr: Signal[Int]
+  def stackPointer: Signal[Int]
 }
 
 
 
-class RichMote(val mote: Mote) {
-  def interfaces: Map[String, MoteInterface] = 
-    mote.getInterfaces.getInterfaces.asScala.map(i => i.getClass.getName.split("\\.").last -> i).toMap
-  def interface[T <: MoteInterface](t: Class[T]): T =
-    mote.getInterfaces.getInterfaceOfType(t)
-  
-  def leds = interface(classOf[LED])
-  def radio = interface(classOf[Radio])
-  // ...
-  
+class RichMote(val mote: Mote) extends InterfaceAccessors {
   def memory: RichMoteMemory = throw new Exception("Unsupported for this mote type")
   def cpu: RichCPU = throw new Exception("Unsupported for this mote type")
   
@@ -46,7 +45,11 @@ object RichMote {
   var conversions = List[PartialFunction[Mote, RichMote]]()
   val defaultConversion: PartialFunction[Mote, RichMote] = { case m: Mote => new RichMote(m) }
 
-  def apply(mote: Mote):RichMote = conversions.find(_.isDefinedAt(mote)).getOrElse(defaultConversion).apply(mote)
+  val cache = collection.mutable.Map[Mote, RichMote]()
+
+  def apply(mote: Mote): RichMote = cache.getOrElseUpdate(mote,
+     conversions.find(_.isDefinedAt(mote)).getOrElse(defaultConversion).apply(mote)
+   )
 }
 
 

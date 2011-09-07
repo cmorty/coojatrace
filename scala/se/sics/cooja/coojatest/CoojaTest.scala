@@ -18,23 +18,6 @@ import mspwrappers._
 
 
 
-object Conversions {
-  import se.sics.cooja.interfaces._
-
-  implicit def simToRichSim(s: Simulation) = new RichSimulation(s)
-  implicit def moteToRichMote(m: Mote) = RichMote(m)
-  implicit def ledToRichLED(i: LED) = new RichLED(i)
-  implicit def radioToRichRadio(r: Radio) = new RichRadio(r)
-    
-  implicit def radioMediumToRichRadioMedium(rm: RadioMedium) = new RichRadioMedium(rm)
-  
-  def interface[T <: MoteInterface](i: MoteInterface): T = i.asInstanceOf[T]
-  implicit def ledInterface = interface[LED] _
-  implicit def radioInterface = interface[Radio] _
-}
-
-
-
 @ClassDescription("CoojaTest")
 @PluginType(PluginType.SIM_PLUGIN)
 class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", gui, false) {
@@ -80,7 +63,8 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     )
     
     val coojaLibs = classes.map(jarPathOfClass(_))
-    val dynamicLibs = sim.getGUI.projectDirClassLoader.asInstanceOf[java.net.URLClassLoader].getURLs.map(_.toString.replace("file:", "")).toList
+    val classloader = sim.getGUI.projectDirClassLoader.asInstanceOf[java.net.URLClassLoader]
+    val dynamicLibs = classloader.getURLs.map(_.toString.replace("file:", "")).toList
     settings.bootclasspath.value = (coojaLibs ::: dynamicLibs).mkString(":")
     
     new Interpreter(settings, pwriter)
@@ -98,23 +82,24 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
         import se.sics.cooja._
         import se.sics.cooja.interfaces._
         import reactive._
-        import se.sics.cooja.coojatest.Conversions._
+        import se.sics.cooja.coojatest.wrappers.Conversions._
+        import se.sics.cooja.coojatest.interfacewrappers.Conversions._
         import se.sics.cooja.coojatest.magicsignals.MagicSignals._
         import se.sics.cooja.coojatest.rules._
-        import se.sics.cooja.coojatest.operators.Operators._
+        import se.sics.cooja.coojatest.operators._
 
         import se.sics.cooja.coojatest.contikiwrappers._
-    	se.sics.cooja.coojatest.contikiwrappers.register()
+        se.sics.cooja.coojatest.contikiwrappers.register()
         import se.sics.cooja.coojatest.mspwrappers._
-    	se.sics.cooja.coojatest.mspwrappers.register()
+        se.sics.cooja.coojatest.mspwrappers.register()
       """)
-  
+      
       interpreter.bind("sim", sim.getClass.getName, sim)
       
       interpreter.interpret("""
-        implicit val _theSimulation = sim
+        implicit val _simulation = sim
         implicit val _observing = new Observing {}
-        implicit val _deplog = new se.sics.cooja.coojatest.magicsignals.DynDepLog
+        implicit val _dyndeplog = new se.sics.cooja.coojatest.magicsignals.DynDepLog
       """)
 	
       scriptResult.setText("")

@@ -35,7 +35,7 @@ package mspwrappers {
       v
     }
   
-    lazy val stackptr = register("SP") 
+    lazy val stackPointer = register("SP") 
   }
   
   

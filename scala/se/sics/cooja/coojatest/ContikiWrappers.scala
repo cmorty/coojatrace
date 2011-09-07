@@ -32,6 +32,7 @@ class MemoryInterface(mote: Mote) extends MoteInterface with PolledAfterActiveTi
   var variables = Map[String, Tuple2[Var[_], () => Unit]]()
   val memory = mote.getMemory.asInstanceOf[AddressMemory]
   
+  // TODO: check if already created
   def addIntVar(name: String): Signal[Int] = {
     val v = Var[Int](memory.getIntValueOf(name)) 
     variables += name -> (v, () => v.update(memory.getIntValueOf(name))) 

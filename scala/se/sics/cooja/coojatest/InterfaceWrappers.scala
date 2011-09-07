@@ -5,6 +5,32 @@ import se.sics.cooja.coojatest.wrappers._
 
 import se.sics.cooja.interfaces._
 
+import scala.collection.JavaConverters._
+
+
+
+object Conversions {
+  def interface[T <: MoteInterface](i: MoteInterface): T = i.asInstanceOf[T]
+  
+  implicit def ledToRichLED(i: LED) = new RichLED(i)  
+  implicit def ledInterface = interface[LED] _
+
+  implicit def radioToRichRadio(r: Radio) = new RichRadio(r)
+  implicit def radioInterface = interface[Radio] _
+}
+
+
+
+trait InterfaceAccessors { this: RichMote =>
+  def interfaces: Map[String, MoteInterface] = 
+    mote.getInterfaces.getInterfaces.asScala.map(i => i.getClass.getName.split("\\.").last -> i).toMap
+  def interface[T <: MoteInterface](t: Class[T]): T =
+    mote.getInterfaces.getInterfaceOfType(t)
+  
+  def leds = interface(classOf[LED])
+  def radio = interface(classOf[Radio])
+}
+
 
 
 class RichLED(val interface: LED) extends RichInterface[LED] {
