@@ -5,7 +5,7 @@ import wrappers._
 
 import reactive._
 
-import javax.swing.{JInternalFrame, JTextArea}
+import javax.swing.{JInternalFrame, JTable, JScrollPane}
 import java.io.{BufferedWriter, FileWriter, PrintWriter, Writer}
 import java.util.{Observer, Observable}
 
@@ -36,48 +36,65 @@ package rules {
 
 
   class Assertion(val cond: Signal[Boolean], val sim: Simulation) extends Rule {
-    for(c <- cond.distinct.change if c == false) {
-      println("ASSERT: " + cond + " is " + c)
-      sim.stopSimulation() 
+    for(c <- cond.distinct) {
+      if(c == false) {
+        println("ASSERT: " + cond + " is " + c)
+        sim.stopSimulation() 
+      }
     }
   }
 
 
 
   trait LogDestination {
-    val stream: PrintWriter
+    def log(time: Long, values: List[String]): Unit
   }
 
-  case class LogFile(file: String)(implicit sim: Simulation) extends LogDestination {
+  case class LogFile(file: String, sep: String = "\t")(implicit sim: Simulation) extends LogDestination {
     val stream = new PrintWriter(new BufferedWriter(new FileWriter(file)))
     sim.addObserver(new Observer() {
       def update(obs: Observable, obj: Object) {
         if(!sim.isRunning) stream.flush()
       }
     })
+
+    def log(time: Long, values: List[String]) {
+      stream.println(time + sep + values.mkString(sep))
+    }
   }
 
-  case class LogWindow(name: String)(implicit sim: Simulation) extends LogDestination {
+  case class LogWindow(name: String, valueNames: String*)(implicit sim: Simulation) extends LogDestination {
     val window = new JInternalFrame(name, true, true, true, true)
-    val scriptResult = new JTextArea()
-    scriptResult.setEditable(false)
-    window.add(scriptResult)
+
+    val model = new javax.swing.table.DefaultTableModel {
+      override def isCellEditable(row: Int, col: Int) = false
+    }
+    model.addColumn("Time")
+    if(valueNames.isEmpty)
+      model.addColumn("Value")
+    else
+      valueNames foreach model.addColumn
+
+    val table = new JTable(model)
+    
+    window.add(new JScrollPane(table))
     window.setSize(300, 500)
     window.show()
     sim.getGUI.getDesktopPane.add(window)
 
-    val stream = new PrintWriter(new Writer () { 
-      def close {}
-      def flush {}
-      def write(cbuf: Array[Char],  off: Int, len: Int) {
-        scriptResult.append(new String(cbuf, off, len));
-      }
-    })
+    def log(time: Long, values: List[String]) {
+      val v = new java.util.Vector[Object](values.length + 1)
+      v.addElement((time/1000.0).asInstanceOf[AnyRef])
+      values foreach v.addElement
+      model.addRow(v)
+    }
   }
 
   class LogRule(val dest: LogDestination, val sim: Simulation, val values: List[Signal[_]]) extends Rule {
-    values.tail.foldLeft(values.head.map(s => dest.stream.println(new RichSimulation(sim).time + "\t" + values.map(_.now).mkString("\t")))) {
+    values.tail.foldLeft(values.head) {
       case (combined, signal) => signal.flatMap(s => combined)
-    } 
+    }.foreach { 
+      c => dest.log(new RichSimulation(sim).time, values.map(_.now.toString))
+    }
   }
 }
