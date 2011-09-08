@@ -1,0 +1,9 @@
+.classpath
+.project
+.scala_dependencies
+.settings/
+bin/
+build/
+coojatest.jar
+hs_err*.log
+
