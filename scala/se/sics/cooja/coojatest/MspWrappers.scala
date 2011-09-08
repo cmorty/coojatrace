@@ -43,25 +43,26 @@ package mspwrappers {
   class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
     lazy val memory = mote.getMemory.asInstanceOf[MspMoteMemory]
     
-    private def memVar[T](name: String, updateFun: () => T) = {
+    private def memVar[T](name: String, updateFun: String => T): Signal[T] = {
       if(!memory.variableExists(name)) {
-        throw new Exception // TODO
+        throw new Exception("Variable " + name + "not found in " + mote)
       }
       
-      val v = Var[T](updateFun())
+      val v = Var[T](updateFun(name))
       
       mote.getCPU.setBreakPoint(memory.getVariableAddress(name), new   se.sics.mspsim.core.CPUMonitor() {
         def cpuAction(t: Int, adr: Int, data: Int) {
           if(t != se.sics.mspsim.core.CPUMonitor.MEMORY_WRITE) return
-          v.update(updateFun())
+          v.update(updateFun(name))
         }
       })
       
       v
     }
-    
-    def intVar(name: String): Signal[Int] = memVar[Int](name, () => memory.getIntValueOf(name))
-    def byteVar(name: String): Signal[Byte] = memVar[Byte](name, () => memory.getByteValueOf(  name))
-    //def array(name: String, length: Int) = 
+
+    def addIntVar(name: String) = memVar(name, memory.getIntValueOf)
+    def addByteVar(name: String) = memVar(name, memory.getByteValueOf)
+    def addArrayVar(name: String, length: Int) =
+      memVar(name, memory.getByteArray(_, length))
   }
 }

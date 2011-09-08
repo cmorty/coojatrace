@@ -29,35 +29,20 @@ class ContikiRichMote(mote: ContikiMote) extends RichMote(mote) {
 
 @ClassDescription("Memory")
 class MemoryInterface(mote: Mote) extends MoteInterface with PolledAfterActiveTicks {
-  var variables = Map[String, Tuple2[Var[_], () => Unit]]()
-  val memory = mote.getMemory.asInstanceOf[AddressMemory]
-  
-  // TODO: check if already created
-  def addIntVar(name: String): Signal[Int] = {
-    val v = Var[Int](memory.getIntValueOf(name)) 
-    variables += name -> (v, () => v.update(memory.getIntValueOf(name))) 
+  private var updates = List[() => Unit]()
+
+  def addVar[T](name: String, updateFun: (String) => T): Signal[T] = {
+    val v = Var[T](updateFun(name))
+    updates ::= ( () => v.update(updateFun(name)) )
     v
   }
-  
-  def addByteVar(name: String): Signal[Byte] = {
-    val v = Var[Byte](memory.getByteValueOf(name)) 
-    variables += name -> (v, () => v.update(memory.getByteValueOf(name))) 
-    v
-  }
-  
-  def addArray(name: String, length: Int): Signal[Array[Byte]] = {
-    val v = Var[Array[Byte]](memory.getByteArray(name, length)) 
-    variables += name -> (v, () => v.update(memory.getByteArray(name, length))) 
-    v
-  }
-  
+
   def doActionsAfterTick() {
       setChanged()
       notifyObservers(this)
-      for((name, (signal, update)) <- variables) {
-        update()
-      }
+      for(u <- updates) u()
   }
+
   def getInterfaceVisualizer = null
   def releaseInterfaceVisualizer(panel: javax.swing.JPanel) {}
   def getConfigXML = null
@@ -76,10 +61,11 @@ class ContikiMoteRichMemory(val mote: ContikiMote) extends RichMoteMemory {
   }
 
   lazy val memory = mote.getMemory.asInstanceOf[AddressMemory]
-  
-  def intVar(name: String) = memoryInterface.addIntVar(name)
-  def byteVar(name: String) = memoryInterface.addByteVar(name)
-  def array(name: String, length: Int) = memoryInterface.addArray(name, length)
+
+  def addIntVar(name: String) = memoryInterface.addVar(name, memory.getIntValueOf)
+  def addByteVar(name: String) = memoryInterface.addVar(name, memory.getByteValueOf)
+  def addArrayVar(name: String, length: Int) =
+    memoryInterface.addVar(name, memory.getByteArray(_, length))
 }
 
 }

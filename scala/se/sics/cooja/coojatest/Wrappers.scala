@@ -33,13 +33,19 @@ trait RichCPU  {
 }
 
 
-
+case class Process(name: String, address: Int) {
+  def hexAddress = "%X".format(address)
+}
 class RichMote(val mote: Mote) extends InterfaceAccessors {
   def memory: RichMoteMemory = throw new Exception("Unsupported for this mote type")
   def cpu: RichCPU = throw new Exception("Unsupported for this mote type")
   
-  lazy val varAdresses = memory.memory.getVariableNames.map(name => (memory.memory.getVariableAddress(name), name)).toMap
-  lazy val currentProcess = memory.intVar("process_current").map(addr => varAdresses(addr) + " (0x" + "%X".format(addr) + ")")
+  lazy val varAdresses = {
+    memory.memory.getVariableNames.map(name => (memory.memory.getVariableAddress(name), name)).toMap
+  }
+  lazy val currentProcess = {
+    memory.intVar("process_current").map(addr => Process(varAdresses(addr), addr))
+  }
 }
 object RichMote {
   var conversions = List[PartialFunction[Mote, RichMote]]()
@@ -81,16 +87,27 @@ trait RichObservable {
 
 
 trait RichMoteMemory {
-  def intVar(name: String): Signal[Int]
-  def byteVar(name: String): Signal[Byte]
-  //def array(name: String, length: Int): Signal[Array[Byte]]
-
   def memory: AddressMemory
+
+  private val intVars = collection.mutable.Map[String, Signal[Int]]()
+  def addIntVar(name: String): Signal[Int]
+  def intVar(name: String): Signal[Int] =
+    intVars.getOrElseUpdate(name, addIntVar(name))
+  
+  private val byteVars = collection.mutable.Map[String, Signal[Byte]]()
+  def addByteVar(name: String): Signal[Byte]
+  def byteVar(name: String): Signal[Byte] = 
+    byteVars.getOrElseUpdate(name, addByteVar(name))
+  
+  private val arrayVars = collection.mutable.Map[String, Signal[Array[Byte]]]()
+  def addArrayVar(name: String, length: Int): Signal[Array[Byte]]
+  def arrayVar(name: String, length: Int): Signal[Array[Byte]] = 
+    arrayVars.getOrElseUpdate(name, addArrayVar(name, length))
+
   def byte(name: String) = memory.getByteValueOf(name)
   def byte_=(name: String, value: Byte) { memory.setByteValueOf(name, value) }
   def int(name: String) = memory.getIntValueOf(name)
   def int_=(name: String, value: Int) { memory.setIntValueOf(name, value) }
-
 }
 
 
