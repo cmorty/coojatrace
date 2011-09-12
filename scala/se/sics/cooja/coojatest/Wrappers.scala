@@ -89,18 +89,18 @@ trait RichObservable {
 trait RichMoteMemory {
   def memory: AddressMemory
 
-  private val intVars = collection.mutable.Map[String, Signal[Int]]()
-  def addIntVar(name: String): Signal[Int]
+  protected val intVars = collection.mutable.Map[String, Signal[Int]]()
+  protected def addIntVar(name: String): Signal[Int]
   def intVar(name: String): Signal[Int] =
     intVars.getOrElseUpdate(name, addIntVar(name))
   
-  private val byteVars = collection.mutable.Map[String, Signal[Byte]]()
-  def addByteVar(name: String): Signal[Byte]
+  protected val byteVars = collection.mutable.Map[String, Signal[Byte]]()
+  protected def addByteVar(name: String): Signal[Byte]
   def byteVar(name: String): Signal[Byte] = 
     byteVars.getOrElseUpdate(name, addByteVar(name))
   
-  private val arrayVars = collection.mutable.Map[String, Signal[Array[Byte]]]()
-  def addArrayVar(name: String, length: Int): Signal[Array[Byte]]
+  protected val arrayVars = collection.mutable.Map[String, Signal[Array[Byte]]]()
+  protected def addArrayVar(name: String, length: Int): Signal[Array[Byte]]
   def arrayVar(name: String, length: Int): Signal[Array[Byte]] = 
     arrayVars.getOrElseUpdate(name, addArrayVar(name, length))
 
