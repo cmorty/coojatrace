@@ -32,9 +32,11 @@ trait InterfaceAccessors { this: RichMote =>
 }
 
 
-
+case class LEDStatus(redOn: Boolean, greenOn: Boolean, yellowOn: Boolean)
 class RichLED(val interface: LED) extends RichInterface[LED] {
-  lazy val status = observedSignal{ (interface.isRedOn, interface.isGreenOn, interface.isYellowOn) }
+  lazy val status = observedSignal {
+   LEDStatus(interface.isRedOn, interface.isGreenOn, interface.isYellowOn) 
+  }
 }
 
 
