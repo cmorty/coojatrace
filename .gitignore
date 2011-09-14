@@ -2,6 +2,7 @@
 .project
 .scala_dependencies
 .settings/
+scaladoc/
 bin/
 build/
 coojatest.jar

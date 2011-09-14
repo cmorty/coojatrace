@@ -35,6 +35,26 @@
     </scalac>
   </target>
 	
+  <target name="docs" depends="init">
+    <mkdir dir="scaladoc"   />
+    <scaladoc
+      srcdir="scala"
+      destdir="scaladoc"
+      deprecation="yes" unchecked="yes"
+      classpathref="build.classpath">
+	<classpath>
+        <pathelement location="${cooja}/dist/cooja.jar"/>
+        <pathelement location="${cooja}/lib/jdom.jar"/>
+        <pathelement location="${cooja}/lib/log4j.jar"/>
+        <pathelement location="${cooja}/apps/mspsim/lib/mspsim.jar"/>
+        <pathelement location="${cooja}/apps/mspsim/lib/cooja_mspsim.jar"/>
+        <pathelement location="lib/scala-reactive.jar"/>
+        <pathelement location="lib/scala-library.jar"/>
+        <pathelement location="lib/scala-compiler.jar"/>
+      </classpath>
+
+    </scaladoc>
+  </target>
 
   <target name="clean" depends="init">
     <delete dir="build" file="${archive}"/>

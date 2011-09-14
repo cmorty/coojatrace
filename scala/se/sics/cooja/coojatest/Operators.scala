@@ -1,9 +1,14 @@
 package se.sics.cooja.coojatest
 
+
+
 import reactive._
 
 
 
+/**
+ * Operators to consolidate data while running the simulation.
+ */
 package object operators extends
   operators.CountOperator with
   operators.AverageOperator with
@@ -12,7 +17,16 @@ package object operators extends
   operators.MinimumOperator
 
 package operators {
+  /**
+   * Count operator.
+   */
   trait CountOperator {
+    /**
+     * Count the number of events received from eventstream.
+     * @param es [[EventStream]] whose events are counted
+     * @return [[Signal]] of event count, starts at 0 before first event is received
+     * @tparam A type of eventstream (works with all types)
+     */
     def count[A](es: EventStream[A]): Signal[Int] = {
       es.foldLeft(0) {
        (count, event) => count+1
@@ -20,8 +34,23 @@ package operators {
     }
   }
 
-  case class AvgState(total: Double, count: Int)
+  /**
+   * Average operator state class.
+   * @param total sum of all values to average
+   * @param count number of values averaged
+   */
+  private case class AvgState(total: Double, count: Int)
+  
+  /**
+   * Average operator.
+   */
   trait AverageOperator {
+    /**
+     * Average the values received from eventstream.
+     * @param es [[EventStream]] whose values are averaged
+     * @return [[Signal]] of average, starts with NaN (!) before first value is received
+     * @tparam T type of eventstream (must be implicitly convertable to Double)
+     */
     def avg[T <% Double](es: EventStream[T]): Signal[Double] = {
       es.foldLeft(AvgState(0, 0)) {
         case (AvgState(total, count), value) => AvgState(total+value, count+1)
@@ -29,8 +58,23 @@ package operators {
     }
   }
 
-  case class StdDevState(a: Double, q: Double, i: Int)
+  /**
+   * Standard deviation operator state class.
+   * @see [[http://en.wikipedia.org/wiki/Standard_deviation#Rapid_calculation_methods]]
+   */
+  private case class StdDevState(a: Double, q: Double, i: Int)
+  
+  /**
+   * (Population) standard deviation operator.
+   */
   trait StdDevOperator {
+    /**
+     * Compute the (population) standard deviation of the values received from eventstream.
+     * @param es [[EventStream]] for whose values standard deviation is computed
+     * @return [[Signal]] of standard deviation, starts with NaN (!) before first value is received
+     * @tparam T type of eventstream (must be implicitly convertable to Double)
+     * @see [[http://en.wikipedia.org/wiki/Standard_deviation#Rapid_calculation_methods]]
+     */
     def stdDev[T <% Double](es: EventStream[T]): Signal[Double] = {
       es.foldLeft(StdDevState(0, 0, 0)) {
         case (StdDevState(a, q, i), value) => {
@@ -43,7 +87,16 @@ package operators {
     }
   }
 
+  /**
+   * Maximum operator.
+   */
   trait MaximumOperator {
+    /**
+     * Compute the maximum of the values received from eventstream.
+     * @param es [[EventStream]] for whose values the maximum is computed
+     * @return [[Signal]] of maximum, starts with -Infinity(!) before first value is received
+     * @tparam T type of eventstream (must be implicitly convertable to Double)
+     */
     def max[T <% Double](es: EventStream[T]): Signal[Double] = {
       val minimum = Double.NegativeInfinity
       es.foldLeft(minimum) {
@@ -52,7 +105,16 @@ package operators {
     }
   }
 
+  /**
+   * Minimum operator.
+   */
   trait MinimumOperator {
+    /**
+     * Compute the minimum of the values received from eventstream.
+     * @param es [[EventStream]] for whose values the minimum is computed
+     * @return [[Signal]] of minimum, starts with +Infinity(!) before first value is received
+     * @tparam T type of eventstream (must be implicitly convertable to Double)
+     */
     def min[T <% Double](es: EventStream[T]): Signal[Double] = {
       val maximum = Double.PositiveInfinity
       es.foldLeft(maximum) {
