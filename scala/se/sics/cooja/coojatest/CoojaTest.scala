@@ -90,7 +90,7 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
       val options = Array[Object](s1, s2)
       val n = JOptionPane.showOptionDialog(
                 GUI.getTopParentContainer(),
-                "The CoojaTest plugin was loaded after other plugins. This can load to classloader inconsistencies.\nDo you want to reload the simulation?",
+                "The CoojaTest plugin was loaded after other plugins. This can lead to classloader inconsistencies.\nDo you want to reload the simulation?",
                 "Reload simulation?", JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE, null, options, s1);
       if (n == JOptionPane.YES_OPTION) {
@@ -152,9 +152,9 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
 
     // import cooja and coojatest classes, register motewrappers
     interpreter.interpret("""
+      import reactive._
       import se.sics.cooja._
       import se.sics.cooja.interfaces._
-      import reactive._
       import se.sics.cooja.coojatest.wrappers.Conversions._
       import se.sics.cooja.coojatest.interfacewrappers.Conversions._
       import se.sics.cooja.coojatest.magicsignals.MagicSignals._
@@ -251,7 +251,7 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
       activate()
     }
 
-    // we never fail
+    // never fails
     true
   }
   
