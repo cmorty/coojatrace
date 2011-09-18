@@ -10,6 +10,7 @@ import se.sics.cooja._
 import se.sics.cooja.interfaces._
 
 import se.sics.cooja.coojatest.interfacewrappers._
+import se.sics.cooja.coojatest.memorywrappers._
 
 
 
@@ -110,10 +111,12 @@ class RichMote(val mote: Mote) extends InterfaceAccessors {
   
   /**
    * Get mote variable names and addresses.
-   * @return map of (variableName -> address) elements
+   * @return map of (address -> variablename) elements
    */
-  lazy val varAdresses = {
-    memory.memory.getVariableNames.map(name => (memory.memory.getVariableAddress(name), name)).toMap
+  lazy val varAddresses = {
+    memory.memory.getVariableNames.map {
+      name => (memory.memory.getVariableAddress(name), name)
+    }.toMap
   }
 
   /**
@@ -121,7 +124,7 @@ class RichMote(val mote: Mote) extends InterfaceAccessors {
    * @return [[Signal]] of currently running [[Process]]
    */
   lazy val currentProcess = {
-    memory.intVar("process_current").map(addr => Process(varAdresses(addr), addr))
+    memory.intVar("process_current").map(addr => Process(varAddresses(addr), addr))
   }
 }
 
@@ -146,7 +149,7 @@ object RichMote {
    * '''Note:''' This is important to prevent wrappers and signals to be created multiple 
    * times, which breaks magicsignals and increases overhead and memory usage
    */
-  val cache = collection.mutable.Map[Mote, RichMote]()
+  val cache = collection.mutable.WeakHashMap[Mote, RichMote]()
 
   /**
    * Wrap a [[Mote]] in its (most specific) [[RichMote]] by searching the conversions list.
@@ -220,113 +223,6 @@ trait RichObservable {
     // return signal
     signal
   }
-}
-
-
-
-/**
- * Generic mote memory wrapper.
- */
-trait RichMoteMemory {
-  /**
-   * the wrapped memory.
-   */
-  def memory: AddressMemory
-
-  /**
-   * Map of already wrapped int variable names to their respective wrapper.
-   *
-   * '''Note:''' This is important to prevent wrappers and signals to be created multiple
-   * times, which breaks magicsignals and increases overhead and memory usage
-   */
-  protected val intVars = collection.mutable.Map[String, Signal[Int]]()
-  
-  /**
-   * Create signal of memory int variable.
-   * @param name name of int variable
-   * @return [[Signal]] with value of int variable
-   */
-  protected def addIntVar(name: String): Signal[Int]
-
-  /**
-   * Get signal of memory int variable.
-   * @param name name of int variable
-   * @return [[Signal]] with value of int variable
-   */
-  def intVar(name: String): Signal[Int] =
-    intVars.getOrElseUpdate(name, addIntVar(name))
-  
-  /**
-   * Map of already wrapped byte variable names to their respective wrapper.
-   *
-   * '''Note:''' This is important to prevent wrappers and signals to be created multiple 
-   * times, which breaks magicsignals and increases overhead and memory usage
-   */
-  protected val byteVars = collection.mutable.Map[String, Signal[Byte]]()
-
-  /**
-   * Create signal of memory byte variable.
-   * @param name name of byte variable
-   * @return [[Signal]] with value of byte variable
-   */
-  protected def addByteVar(name: String): Signal[Byte]
-
-  /**
-   * Get signal of memory byte variable.
-   * @param name name of byte variable
-   * @return [[Signal]] with value of byte variable
-   */
-  def byteVar(name: String): Signal[Byte] = 
-    byteVars.getOrElseUpdate(name, addByteVar(name))
-  
-  /**
-   * Map of already wrapped (byte) array variable names to their respective wrapper.
-   *
-   * '''Note:''' This is important to prevent wrappers and signals to be created multiple 
-   * times, which breaks magicsignals and increases overhead and memory usage
-   */
-  protected val arrayVars = collection.mutable.Map[String, Signal[Array[Byte]]]()
-  
-  /**
-   * Create signal of memory byte array.
-   * @param name name of array
-   * @param length length of array
-   * @return [[Signal]] with value of byte array
-   */
-  protected def addArrayVar(name: String, length: Int): Signal[Array[Byte]]
-
-  /**
-   * Get signal of memory byte array.
-   * @param name name of array
-   * @param length length of array
-   * @return [[Signal]] with value of byte array
-   */
-  def arrayVar(name: String, length: Int): Signal[Array[Byte]] = 
-    arrayVars.getOrElseUpdate(name, addArrayVar(name, length))
-
-
-
-  /**
-   * Get value of byte variable.
-   * @param name name of variable
-   * @return byte value of variable
-   */
-  def byte(name: String) = memory.getByteValueOf(name)
-
-  /**
-   * Get value of int variable.
-   * @param name name of variable
-   * @return int value of variable
-   */
-  def int(name: String) = memory.getIntValueOf(name)
-  
-  /**
-   * Get byte array of specified length.
-   * @param name name of array
-   * @param length length of array in bytes
-   * @return byte array from memory
-   */
-  def array(name: String, length: Int) = memory.getByteArray(name, length)
 }
 
 

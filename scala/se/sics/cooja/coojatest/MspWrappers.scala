@@ -6,6 +6,7 @@ import reactive._
 
 import se.sics.cooja._
 import se.sics.cooja.coojatest.wrappers._
+import se.sics.cooja.coojatest.memorywrappers._
 
 import se.sics.cooja.mspmote._ 
 
@@ -78,28 +79,27 @@ package mspwrappers {
     /**
      * Create signal for MSP mote memory variable.
      * 
-     * @param name variable name
-     * @oaram updateFun function which returns variable value, called at every change
+     * @param addr variable address
+     * @oaram updateFun function which returns variable value at given address,
+     *   called at every change
+     * @oaram convFun function which converts new value from Int to correct type
      * @return [[Signal]] of variable value
      * @tparam T type of variable / result type of updateFun
      */
-    private def memVar[T](name: String, updateFun: String => T): Signal[T] = {
-      // throw exception if variable name not found
-      if(!memory.variableExists(name)) {
-        throw new Exception("Variable " + name + "not found in " + mote)
-      }
-      
+    private def memVar[T](addr: Int, updateFun: Int => T, convFun: Int => T): Signal[T] = {
       // create new signal, get inital value by evaluating updateFun
-      val v = Var[T](updateFun(name))
+      val v = Var[T](updateFun(addr))
       
       // add CPU breakpoint/monitor for variable address
-      mote.getCPU.setBreakPoint(memory.getVariableAddress(name), new   se.sics.mspsim.core.CPUMonitor() {
+      mote.getCPU.setBreakPoint(addr, new se.sics.mspsim.core.CPUMonitor() {
         def cpuAction(t: Int, adr: Int, data: Int) {
           // ignore everything except writes
           if(t != se.sics.mspsim.core.CPUMonitor.MEMORY_WRITE) return
 
           // update signal
-          v.update(updateFun(name))
+          // NOTE: this method is called _before_ the actual memory is changed,
+          // so we need to take the new value from data and pass it to updateFun
+          v.update(convFun(data))
         }
       })
       
@@ -107,10 +107,37 @@ package mspwrappers {
       v
     }
 
-    def addIntVar(name: String) = memVar(name, memory.getIntValueOf)
-    def addByteVar(name: String) = memVar(name, memory.getByteValueOf)
-    def addArrayVar(name: String, length: Int) =
-      memVar(name, memory.getByteArray(_, length))
+    /**
+     * Get value of byte variable at address.
+     *
+     * @param addr address of variable
+     * @return byte value of variable
+     */
+    override def byte(addr: Int) =
+      memory.getMemorySegment(addr, 1)(0)
+
+    /**
+     * Get value of integer variable at address.
+     *
+     * @param addr address of variable
+     * @return integer value of variable
+     */
+    override def int(addr: Int) = {
+      val bytes = memory.getMemorySegment(addr, 4).map(_ & 0xFF)
+      val retVal = (bytes(0) << 8) + bytes(1)
+      Integer.reverseBytes(retVal) >> 16
+    }
+
+
+    def addIntVar(addr: Int) = memVar(addr, int, _.toInt)
+    def addByteVar(addr: Int) = memVar(addr, byte, _.toByte)
+
+    // TODO
+    def addPointerVar(addr: Int) = memVar(addr, pointer, _.toInt)
+
+
+    /*def addArrayVar(name: String, length: Int) =
+      memVar(name, memory.getByteArray(_: String, length))
+    }*/
   }
-  
 }

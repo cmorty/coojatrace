@@ -6,6 +6,7 @@ import reactive._
 
 import se.sics.cooja._
 import se.sics.cooja.coojatest.wrappers._
+import se.sics.cooja.coojatest.memorywrappers._
 
 import se.sics.cooja.contikimote._
 import se.sics.cooja.interfaces._
@@ -49,25 +50,34 @@ package contikiwrappers {
    */
   @ClassDescription("Memory")
   class MemoryInterface(mote: Mote) extends MoteInterface with PolledAfterActiveTicks {
-    /**
-     * List of update callback functions, called after every active tick.
-     */
-    private var updates = List[() => Unit]()
+    // TODO DOC
+    private val updates = collection.mutable.WeakHashMap[Var[_], () => Unit]()
+
+
+    val logger = org.apache.log4j.Logger.getLogger(this.getClass)  // DEBUG 
 
     /**
      * Create signal for contiki mote memory variable.
      * 
-     * @param name variable name
-     * @param updateFun function which returns variable value, called at every change
+     * @param addr variable address
+     * @param updateFun function which returns variable value at given address,
+     *   called at every change
      * @return [[Signal]] of variable value
      * @tparam T type of variable / result type of updateFun
      */
-    def addVar[T](name: String, updateFun: (String) => T): Signal[T] = {
+    def addVar[T](addr: Int, updateFun: (Int) => T): Signal[T] = {
       // create new signal, get inital value by evaluating updateFun
-      val v = Var[T](updateFun(name))
+      val v = Var[T](updateFun(addr))
 
-      // add new function to update signal with updateFun to list of callbacks after tick 
-      updates ::= ( () => v.update(updateFun(name)) )
+      logger.debug("+++ ContikiMote: added var @ " + addr + " = " + v.now) // DEBUG
+
+      //TODO DOC
+      val weak = new ref.WeakReference(v)
+
+      // TODO DOC
+      updates synchronized {
+        updates(v) = { () => weak().update(updateFun(addr)) }
+      }
 
       // return signal
       v
@@ -79,7 +89,13 @@ package contikiwrappers {
     def doActionsAfterTick() {
         setChanged()
         notifyObservers(this)
-        for(u <- updates) u()
+
+        logger.debug("!! ContikiMote " + mote + " ticked: calling " + updates.size + " funs") // DEBUG
+
+        // TODO DOC
+        updates synchronized {
+          for((v, fun) <- updates) fun()  
+        }
     }
 
     def getInterfaceVisualizer = null
@@ -120,10 +136,17 @@ package contikiwrappers {
 
     lazy val memory = mote.getMemory.asInstanceOf[AddressMemory]
 
-    def addIntVar(name: String) = memoryInterface.addVar(name, memory.getIntValueOf)
-    def addByteVar(name: String) = memoryInterface.addVar(name, memory.getByteValueOf)
-    def addArrayVar(name: String, length: Int) =
-      memoryInterface.addVar(name, memory.getByteArray(_, length))
+    def addIntVar(addr: Int) = memoryInterface.addVar(addr, int)
+    def addByteVar(addr: Int) = memoryInterface.addVar(addr, byte)
+
+    // TODO
+    override def pointer(name: String) = int(name) - int("referenceVar")
+    override def pointer(addr: Int) = int(addr) - int("referenceVar")
+
+    // TODO
+    def addPointerVar(addr: Int) = memoryInterface.addVar(addr, pointer)
+    //def addArrayVar(name: String, length: Int) =
+    //  memoryInterface.addVar(name, memory.getByteArray(_, length))
   }
 
 }
