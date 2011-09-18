@@ -59,6 +59,12 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
    * Status variable showing whether script has been run and is active.
    */
   private var active = false
+
+  /**
+   * PrintWriter for interpreter output, goes to System.out (with autoflush)
+   */
+  private var errorWriter = new StringWriter
+  private var pwriter = new PrintWriter(errorWriter, true)
   
   // Constructor:
   // create Swing elements if run with GUI
@@ -133,8 +139,8 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     val dynamicLibs = classloader.getURLs.map(_.toString.replace("file:", "")).toList
     settings.bootclasspath.value = (coojaLibs ::: dynamicLibs).mkString(":")
     
-    // create new scala interpreter with classpath and write output to System.out (autoflush)
-    new Interpreter(settings, new PrintWriter(System.out, true))
+    // create new scala interpreter with classpath and write output to System.out
+    new Interpreter(settings, pwriter)
   }
 
   /**
@@ -176,24 +182,36 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
       implicit val _observing = new Observing {}
       implicit val _dyndeplog = new se.sics.cooja.coojatest.magicsignals.DynDepLog
     """)
+
+    // ignore output so far
+    errorWriter.getBuffer.setLength(0)
     
     // interpret test script
     val res = interpreter.interpret(scriptCode.getText())
     logger.debug("Interpreting script: " + res)
 
     if(res == scala.tools.nsc.InterpreterResults.Success) {
-      // success, change 
+      // success, change status
       scriptButton.setText("Reset")
       active = true
     }
     else if(res == scala.tools.nsc.InterpreterResults.Incomplete) {
       // incomplete, show warning dialog
-      // TODO
+      JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+            "The test script is incomplete.\n\n" +
+            "This is most likely caused by an unmatched open (, [ or \"",
+            "Script incomplete", JOptionPane.WARNING_MESSAGE)
     }
     else {
       // error, show error dialog
-      // TODO
-      //if(GUI.showErrorDialog(this, "Scala Compilation Error", new Exception(""), true)) activate()
+      pwriter.flush()
+      val msg = errorWriter.toString
+      val e = new Exception("Scala compilation error") {
+        override def printStackTrace(stream: PrintStream) {
+          stream.print(msg)
+        }
+      }
+      if(GUI.showErrorDialog(this, "Scala compilation error", e, true)) activate()
     }
   }
 
@@ -201,6 +219,8 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
    * Deactivate plugin by resetting and deleting interpreter.
    */
   def deactivate() {
+    // TODO: call cleanup-callbacks
+
     // reset interpreter (clears all defined objects)
     interpreter.reset() // necessary?
 
@@ -260,6 +280,7 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
    */
   override def closePlugin() { 
     logger.debug("closePlugin() called")
-    // TODO: call cleanup-callbacks
+
+    deactivate()
   }  
 }
