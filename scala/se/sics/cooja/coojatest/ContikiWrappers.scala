@@ -71,12 +71,12 @@ package contikiwrappers {
 
       logger.debug("+++ ContikiMote: added var @ " + addr + " = " + v.now) // DEBUG
 
-      //TODO DOC
+      // TODO DOC
       val weak = new ref.WeakReference(v)
 
       // TODO DOC
       updates synchronized {
-        updates(v) = { () => weak().update(updateFun(addr)) }
+        updates(v) = { () => weak.get.map(_.update(updateFun(addr))) }
       }
 
       // return signal
@@ -94,7 +94,7 @@ package contikiwrappers {
 
         // TODO DOC
         updates synchronized {
-          for((v, fun) <- updates) fun()  
+          for(fun <- updates.values.toSeq) fun()  
         }
     }
 
