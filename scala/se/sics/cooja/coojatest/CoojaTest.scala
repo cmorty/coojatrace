@@ -246,6 +246,9 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     for(f <- cleanUpCallBacks) f()
     cleanUpCallBacks = Nil
 
+    // clear mote conversion cache
+    RichMote.clearCache()
+
     // clear all active rules
     rules.reset()
 

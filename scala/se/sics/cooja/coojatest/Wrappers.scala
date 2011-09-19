@@ -136,12 +136,14 @@ object RichMote {
    * List of [[Mote]] to [[RichMote]] conversions. This list is filled at runtime with available
    * more specialized richmote subclass conversions.
    */
-  var conversions = List[PartialFunction[Mote, RichMote]]()
+  protected[coojatest] var conversions = List[PartialFunction[Mote, RichMote]]()
 
   /**
    * Default [[Mote]] to [[RichMote]] conversion. Creates a generic [[RichMote]] wrapper.
    */
-  val defaultConversion: PartialFunction[Mote, RichMote] = { case m: Mote => new RichMote(m) }
+  protected val defaultConversion: PartialFunction[Mote, RichMote] = { 
+    case m: Mote => new RichMote(m)
+  }
 
   /**
    * Map of already wrapped motes to their respective wrapper.
@@ -149,7 +151,7 @@ object RichMote {
    * '''Note:''' This is important to prevent wrappers and signals to be created multiple 
    * times, which breaks magicsignals and increases overhead and memory usage
    */
-  val cache = collection.mutable.WeakHashMap[Mote, RichMote]()
+  protected val cache = collection.mutable.WeakHashMap[Mote, RichMote]()
 
   /**
    * Wrap a [[Mote]] in its (most specific) [[RichMote]] by searching the conversions list.
@@ -159,6 +161,13 @@ object RichMote {
   def apply(mote: Mote): RichMote = cache.getOrElseUpdate(mote,
     conversions.find(_.isDefinedAt(mote)).getOrElse(defaultConversion).apply(mote)
   )
+
+  /**
+   * Clears mote conversion cache.
+   */
+  def clearCache() {
+    conversions = Nil
+  }
 }
 
 
