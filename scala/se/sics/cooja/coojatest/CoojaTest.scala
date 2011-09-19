@@ -186,6 +186,8 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
       implicit val _simulation = sim
       implicit val _observing = new Observing {}
       implicit val _dyndeplog = new se.sics.cooja.coojatest.magicsignals.DynDepLog
+
+      Console.setOut(System.out)
     """)
 
     // ignore output so far
