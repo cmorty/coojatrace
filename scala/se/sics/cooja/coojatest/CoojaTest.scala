@@ -291,7 +291,7 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
       if(e.getName == "script" && !e.getText.isEmpty) scriptCode.setText(e.getText)
 
       // load plugin status
-      if(e.getName == "active" && GUI.isVisualized) activate()
+      if(e.getName == "active" && e.getText.toBoolean == true) activate()
     }
 
     // auto-activate when run without GUI
