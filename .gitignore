@@ -6,6 +6,6 @@
 scaladoc/
 bin/
 build/
-coojatest.jar
+coojatrace.jar
 hs_err*.log
 

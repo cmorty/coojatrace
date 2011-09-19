@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<project name="CoojaTest" default="jar" basedir=".">
+<project name="CoojaTrace" default="jar" basedir=".">
   <property name="cooja" value="../.."/>
-  <property name="archive" value="coojatest.jar"/>
+  <property name="archive" value="coojatrace.jar"/>
 
   <target name="init">
     <tstamp/>

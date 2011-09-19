@@ -1,9 +1,9 @@
-package se.sics.cooja.coojatest.interfacewrappers
+package se.sics.cooja.coojatrace.interfacewrappers
 
 
 
 import se.sics.cooja._
-import se.sics.cooja.coojatest.wrappers._
+import se.sics.cooja.coojatrace.wrappers._
 
 import se.sics.cooja.interfaces._
 

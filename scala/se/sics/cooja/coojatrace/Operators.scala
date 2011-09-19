@@ -1,4 +1,4 @@
-package se.sics.cooja.coojatest
+package se.sics.cooja.coojatrace
 
 
 

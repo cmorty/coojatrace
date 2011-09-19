@@ -1,4 +1,4 @@
-package se.sics.cooja.coojatest
+package se.sics.cooja.coojatrace
 
 
 
@@ -24,16 +24,16 @@ import mspwrappers._
 
 /**
  * 
- * The CoojaTest Cooja-Plugin.
+ * The CoojaTrace Cooja-Plugin.
  * 
  * Creates a scala interpreter and runs the test script to initialize rules, operators and signals
- * of the CoojaTest framework. Can be run without GUI.
+ * of the CoojaTrace framework. Can be run without GUI.
  *
  * @author Florian Lukas [[mailto:florian.lukas@e-technik.stud.uni-erlangen.de]]
  */
-@ClassDescription("CoojaTest")
+@ClassDescription("CoojaTrace")
 @PluginType(PluginType.SIM_PLUGIN) // comment out this line to prevent scaladoc bug
-class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", gui, false) {
+class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace", gui, false) {
   /**
    * Logger for our plugin.
    */
@@ -105,7 +105,7 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
       val options = Array[Object](s1, s2)
       val n = JOptionPane.showOptionDialog(
                 GUI.getTopParentContainer(),
-                "The CoojaTest plugin was loaded after other plugins. This can lead to classloader inconsistencies.\nDo you want to reload the simulation to fix this?",
+                "The CoojaTrace plugin was loaded after other plugins. This can lead to classloader inconsistencies.\nDo you want to reload the simulation to fix this?",
                 "Reload simulation?", JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE, null, options, s1);
       if (n == JOptionPane.YES_OPTION) {
@@ -165,14 +165,14 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     // create interpreter
     interpreter = createInterpreter()
 
-    // import cooja and coojatest classes, register motewrappers
+    // import cooja and coojatrace classes, register motewrappers
     interpreter.interpret("""
       import reactive._
 
       import se.sics.cooja._
       import interfaces._
       
-      import coojatest._
+      import coojatrace._
       import wrappers.Conversions._
       import interfacewrappers.Conversions._
       import magicsignals.MagicSignals._
@@ -192,7 +192,7 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     interpreter.interpret("""
       implicit val _simulation = sim
       implicit val _observing = new Observing {}
-      implicit val _dyndeplog = new se.sics.cooja.coojatest.magicsignals.DynDepLog
+      implicit val _dyndeplog = new se.sics.cooja.coojatrace.magicsignals.DynDepLog
 
       Console.setOut(System.out)
     """)
@@ -317,15 +317,15 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
 }
 
 /**
- * Some utility methods for CoojaTestPlugin.
+ * Some utility methods for CoojaTracePlugin.
  */
-object CoojaTestPlugin {
+object CoojaTracePlugin {
   /**
-   * Get the CoojaTestPlugin instance for a given simulation.
+   * Get the CoojaTracePlugin instance for a given simulation.
    *
    * @param sim simulation whose plugin will be returned
-   * @return instance of CoojaTestPlugin in sim
+   * @return instance of CoojaTracePlugin in sim
    */
-  def forSim(sim: Simulation): CoojaTestPlugin =
-    sim.getGUI.getPlugin("CoojaTestPlugin").asInstanceOf[CoojaTestPlugin] 
+  def forSim(sim: Simulation): CoojaTracePlugin =
+    sim.getGUI.getPlugin("CoojaTracePlugin").asInstanceOf[CoojaTracePlugin] 
 }

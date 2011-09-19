@@ -1,4 +1,4 @@
-package se.sics.cooja.coojatest.magicsignals
+package se.sics.cooja.coojatrace.magicsignals
 
 import reactive._
 import scala.util.DynamicVariable
@@ -14,7 +14,7 @@ class DepLogger(var deps:List[Signal[_]])
 
 
 /**
- * Dynamic variable which points to the current [[se.sics.cooja.coojatest.magicsignals.DepLogger]].
+ * Dynamic variable which points to the current [[se.sics.cooja.coojatrace.magicsignals.DepLogger]].
  */
 class DynDepLog extends DynamicVariable[DepLogger](new DepLogger(Nil))
 
@@ -41,8 +41,8 @@ object MagicSignals {
    * implemented for the value of a signal is called on the signal itself.
    *
    * @param f named parameter (function) which is to be turned into a signal
-   * @param deplog [[se.sics.cooja.coojatest.magicsignals.DynDepLog]] which will be pointed 
-   *   to a new [[se.sics.cooja.coojatest.magicsignals.DepLogger]]
+   * @param deplog [[se.sics.cooja.coojatrace.magicsignals.DynDepLog]] which will be pointed 
+   *   to a new [[se.sics.cooja.coojatrace.magicsignals.DepLogger]]
    * @return [[Signal]] created by reapplying f at every change of the dependency signals
    * @tparam T result type of f / type of newly created signal
    */
@@ -70,7 +70,7 @@ object MagicSignals {
    * implemented for the value of a signal is called on the signal itself.
    *
    * @param s [[Signal]] which is unwrapped
-   * @param deplog [[se.sics.cooja.coojatest.magicsignals.DynDepLog]] which points to
+   * @param deplog [[se.sics.cooja.coojatrace.magicsignals.DynDepLog]] which points to
    *   the currently used [[DepLogger]]
    * @return current value of signal
    * @tparam T type of signal value

@@ -1,4 +1,4 @@
-package se.sics.cooja.coojatest
+package se.sics.cooja.coojatrace
 
 
 
@@ -142,7 +142,7 @@ package rules {
     var active = true // active until closed
 
     // close file on plugin deactivation
-    CoojaTestPlugin.forSim(sim).onCleanUp {
+    CoojaTracePlugin.forSim(sim).onCleanUp {
       stream.close()
       active = false
     }
@@ -202,7 +202,7 @@ package rules {
     sim.getGUI.getDesktopPane.add(window)
 
     // close window on plugin deactivation
-    CoojaTestPlugin.forSim(sim).onCleanUp {
+    CoojaTracePlugin.forSim(sim).onCleanUp {
       window.dispose()
     }
 

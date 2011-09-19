@@ -1,4 +1,4 @@
-package se.sics.cooja.coojatest.memorywrappers
+package se.sics.cooja.coojatrace.memorywrappers
 
 
 
@@ -9,7 +9,7 @@ import java.util.{Observable, Observer}
 import se.sics.cooja._
 import se.sics.cooja.interfaces._
 
-import se.sics.cooja.coojatest.wrappers._
+import se.sics.cooja.coojatrace.wrappers._
 
 
 
@@ -105,7 +105,7 @@ case class MemSignal[+T](addr: Int, sig: Signal[T]) extends Signal[T] {
  * Memory variable. Can be used as a signal.
  *
  * @param addr [[Signal]] for address of variable. Changes to address update value instantly
- * @param typ [[se.sics.cooja.coojatest.memorywrappers.MemVarType]] of memory variable
+ * @param typ [[se.sics.cooja.coojatrace.memorywrappers.MemVarType]] of memory variable
  * @param mem mote memory in which variable is found
  * @tparam T scala type of memory variable
  */
@@ -140,7 +140,7 @@ case class MemVar[+T](addr: Signal[Int], typ: MemVarType[T], mem: RichMoteMemory
  * Pointer to memory variable. Can be used as a signal for variable address.
  *
  * @param addr [[Signal]] for address this pointer '''points at'''. '''Not address of pointer!'''
- * @param typ [[se.sics.cooja.coojatest.memorywrappers.MemVarType]] of target variable
+ * @param typ [[se.sics.cooja.coojatrace.memorywrappers.MemVarType]] of target variable
  * @param mem mote memory in which target variable  is found
  * @tparam T scala type of target variable
  */

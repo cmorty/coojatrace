@@ -1,4 +1,4 @@
-package se.sics.cooja.coojatest.wrappers
+package se.sics.cooja.coojatrace.wrappers
 
 
 
@@ -9,7 +9,7 @@ import java.util.{Observable, Observer}
 import se.sics.cooja._
 import interfaces._
 
-import se.sics.cooja.coojatest._
+import se.sics.cooja.coojatrace._
 import interfacewrappers._
 import memorywrappers._
 
@@ -138,7 +138,7 @@ object RichMote {
    * List of [[Mote]] to [[RichMote]] conversions. This list is filled at runtime with available
    * more specialized richmote subclass conversions.
    */
-  protected[coojatest] var conversions = List[PartialFunction[Mote, RichMote]]()
+  protected[coojatrace] var conversions = List[PartialFunction[Mote, RichMote]]()
 
   /**
    * Default [[Mote]] to [[RichMote]] conversion. Creates a generic [[RichMote]] wrapper.
@@ -255,7 +255,7 @@ trait RichObservable {
     addObserver(o)
 
     // remove observer when deactivating plugin
-    CoojaTestPlugin.forSim(simulation).onCleanUp {
+    CoojaTracePlugin.forSim(simulation).onCleanUp {
       removeObserver(o)
     }
   }
