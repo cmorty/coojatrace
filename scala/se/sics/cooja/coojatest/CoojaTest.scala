@@ -94,14 +94,18 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     add(new JScrollPane(scriptCode), BorderLayout.CENTER)
     setSize(500,500)
   
-    // Propose to reload simulation when different classloaders are found
-    if(sim.getMotes.exists { _.getClass.getClassLoader != this.getClass.getClassLoader } ) {
+    // Propose to reload simulation when another classloader besides our own and cooja's is found
+    val problem = sim.getMotes.exists { mote =>
+      (mote.getClass.getClassLoader != this.getClass.getClassLoader) &&
+      (mote.getClass.getClassLoader != gui.getClass.getClassLoader)
+    }
+    if(problem == true) {
       val s1 = "Reload"
       val s2 = "Ignore"
       val options = Array[Object](s1, s2)
       val n = JOptionPane.showOptionDialog(
                 GUI.getTopParentContainer(),
-                "The CoojaTest plugin was loaded after other plugins. This can lead to classloader inconsistencies.\nDo you want to reload the simulation?",
+                "The CoojaTest plugin was loaded after other plugins. This can lead to classloader inconsistencies.\nDo you want to reload the simulation to fix this?",
                 "Reload simulation?", JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE, null, options, s1);
       if (n == JOptionPane.YES_OPTION) {
