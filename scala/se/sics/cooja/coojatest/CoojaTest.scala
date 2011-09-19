@@ -164,18 +164,21 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     // import cooja and coojatest classes, register motewrappers
     interpreter.interpret("""
       import reactive._
-      import se.sics.cooja._
-      import se.sics.cooja.interfaces._
-      import se.sics.cooja.coojatest.wrappers.Conversions._
-      import se.sics.cooja.coojatest.interfacewrappers.Conversions._
-      import se.sics.cooja.coojatest.magicsignals.MagicSignals._
-      import se.sics.cooja.coojatest.rules._
-      import se.sics.cooja.coojatest.operators._
 
-      import se.sics.cooja.coojatest.contikiwrappers._
-      se.sics.cooja.coojatest.contikiwrappers.register()
-      import se.sics.cooja.coojatest.mspwrappers._
-      se.sics.cooja.coojatest.mspwrappers.register()
+      import se.sics.cooja._
+      import interfaces._
+      
+      import coojatest._
+      import wrappers.Conversions._
+      import interfacewrappers.Conversions._
+      import magicsignals.MagicSignals._
+      import rules._
+      import operators._
+
+      import contikiwrappers._
+      contikiwrappers.register()
+      import mspwrappers._
+      mspwrappers.register()
     """)
     
     // make the simulation object available to test code
