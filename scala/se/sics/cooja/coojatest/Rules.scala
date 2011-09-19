@@ -118,6 +118,12 @@ package rules {
      * @param values list of values to be logged
      */
     def log(time: Long, values: List[_]): Unit
+
+    /**
+     * Get status of log destination. `false` means it is no longer available
+     * and logging to this destination should be stopped.
+     */
+    def active: Boolean
   }
 
   /**
@@ -132,6 +138,14 @@ package rules {
      * PrintWriter for writing to file
      */
     val stream = new PrintWriter(new BufferedWriter(new FileWriter(file)))
+
+    var active = true // active until closed
+
+    // close file on plugin deactivation
+    sim.getGUI.getPlugin("CoojaTestPlugin").asInstanceOf[CoojaTestPlugin].onCleanUp {
+      stream.close()
+      active = false
+    }
 
     // add observer to [[Simulation]] which flushes log buffers when sim is stopped
     sim.addObserver(new Observer() {
@@ -187,6 +201,11 @@ package rules {
     window.show()
     sim.getGUI.getDesktopPane.add(window)
 
+    // close window on plugin deactivation
+    sim.getGUI.getPlugin("CoojaTestPlugin").asInstanceOf[CoojaTestPlugin].onCleanUp {
+      window.dispose()
+    }
+
     def log(time: Long, values: List[_]) {
       // create new java vector for row values
       val v = new java.util.Vector[Object](values.length + 1)
@@ -200,6 +219,9 @@ package rules {
       // insert entire row
       model.addRow(v)
     }
+
+    // active as long as window is open
+    def active = !window.isClosed
   }
 
   /**
@@ -223,8 +245,8 @@ package rules {
       }.change
     )
 
-    // call dest.log for every change with a list of current values
-    for(e <- es) dest.log(new RichSimulation(sim).time, e match {
+    // call dest.log for every change with a list of current values (as long as dest is active)
+    for(e <- es.takeWhile(_ => dest.active)) dest.log(new RichSimulation(sim).time, e match {
       case list: List[_] => list
       case event: Any => List(event) // turn single value into list
     })

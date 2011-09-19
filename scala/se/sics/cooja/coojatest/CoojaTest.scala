@@ -61,6 +61,11 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
   private var active = false
 
   /**
+   * List of callback functions to call when deactivating plugin.
+   */
+  private var cleanUpCallBacks = List[() => Unit]()
+
+  /**
    * PrintWriter for interpreter output, goes to System.out (with autoflush)
    */
   private var errorWriter = new StringWriter
@@ -216,13 +221,27 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
   }
 
   /**
+   * Perform given function when deactivating plugin. 
+   *
+   * @param f action to be performed on plugin deactivation
+   */
+  def onCleanUp(f: => Unit) {
+    cleanUpCallBacks ::= f _
+  }
+
+  /**
    * Deactivate plugin by resetting and deleting interpreter.
    */
   def deactivate() {
-    // TODO: call cleanup-callbacks
+    // call cleanup-callbacks and clear them
+    for(f <- cleanUpCallBacks) f()
+    cleanUpCallBacks = Nil
+
+    // clear all active rules
+    rules.reset()
 
     // reset interpreter (clears all defined objects)
-    interpreter.reset() // necessary?
+    if(interpreter != null) interpreter.reset() // necessary?
 
     // delete interpreter instance
     interpreter = null
