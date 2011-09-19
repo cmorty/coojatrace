@@ -26,31 +26,34 @@ object Conversions {
    */
   private def interface[T <: MoteInterface](i: MoteInterface): T = i.asInstanceOf[T]
   
-  implicit def led2RichLED(i: LED) = new RichLED(i)  
+  implicit def led2RichLED(i: LED)(implicit sim: Simulation) = new RichLED(i, sim)
   implicit def ledInterface = interface[LED] _
 
-  implicit def radio2RichRadio(r: Radio) = new RichRadio(r)
+  implicit def radio2RichRadio(r: Radio)(implicit sim: Simulation) = new RichRadio(r, sim)
   implicit def radioInterface = interface[Radio] _
 
-  implicit def position2RichPosition(p: Position) = new RichPosition(p)
+  implicit def position2RichPosition(p: Position)(implicit sim: Simulation) = 
+    new RichPosition(p, sim)
   implicit def positionInterface = interface[Position] _
 
-  implicit def log2RichLog(l: Log) = new RichLog(l)
+  implicit def log2RichLog(l: Log)(implicit sim: Simulation) = new RichLog(l, sim)
   implicit def logInterface = interface[Log] _
 
-  implicit def ipAddress2RichIPAddress(ia: IPAddress) = new RichIPAddress(ia)
+  implicit def ipAddress2RichIPAddress(ia: IPAddress)(implicit sim: Simulation) = 
+    new RichIPAddress(ia, sim)
   implicit def ipAddressInterface = interface[IPAddress] _
 
-  implicit def rimeAddress2RichRimeAddress(ra: RimeAddress) = new RichRimeAddress(ra)
+  implicit def rimeAddress2RichRimeAddress(ra: RimeAddress)(implicit sim: Simulation) = 
+    new RichRimeAddress(ra, sim)
   implicit def rimeAddressInterface = interface[RimeAddress] _
 
-  implicit def moteID2RichMoteID(id: MoteID) = new RichMoteID(id)
+  implicit def moteID2RichMoteID(id: MoteID)(implicit sim: Simulation) = new RichMoteID(id, sim)
   implicit def moteIDInterface = interface[MoteID] _
 
-  implicit def beeper2RichBeeper(b: Beeper) = new RichBeeper(b)
+  implicit def beeper2RichBeeper(b: Beeper)(implicit sim: Simulation) = new RichBeeper(b, sim)
   implicit def beeperInterface = interface[Beeper] _
 
-  implicit def button2RichButton(bt: Button) = new RichButton(bt)
+  implicit def button2RichButton(bt: Button)(implicit sim: Simulation) = new RichButton(bt, sim)
   implicit def buttonInterface = interface[Button] _
 }
 
@@ -105,7 +108,7 @@ case class LEDStatus(redOn: Boolean, greenOn: Boolean, yellowOn: Boolean)
 /**
  * Wrapper for mote LED interface.
  */
-class RichLED(val interface: LED) extends RichInterface[LED] {
+class RichLED(val interface: LED, val simulation: Simulation) extends RichInterface[LED] {
   /**
    * Get signal of LED status.
    * @return [[Signal]] of type [[LEDStatus]]
@@ -129,7 +132,7 @@ case class MotePosition(x: Double, y: Double, z: Double)
 /**
  * Wrapper for mote position (interface).
  */
-class RichPosition(val interface: Position) extends RichInterface[Position] {
+class RichPosition(val interface: Position, val simulation: Simulation) extends RichInterface[Position] {
   /**
    * Get signal of mote position.
    * @return [[Signal]] of type [[MotePosition]]
@@ -144,7 +147,7 @@ class RichPosition(val interface: Position) extends RichInterface[Position] {
 /**
  * Wrapper for mote radio interface.
  */
-class RichRadio(val interface: Radio) extends RichInterface[Radio]  {
+class RichRadio(val interface: Radio, val simulation: Simulation) extends RichInterface[Radio]  {
   /**
    * Get eventstream of mote radio interface events.
    * @return [[EventStream]] of radio events
@@ -219,7 +222,7 @@ class RichRadio(val interface: Radio) extends RichInterface[Radio]  {
 /**
  * Wrapper for mote log (interface).
  */
-class RichLog(val interface: Log) extends RichInterface[Log] {
+class RichLog(val interface: Log, val simulation: Simulation) extends RichInterface[Log] {
   /**
    * Get eventstream of log messages.
    * @return [[EventStream]] of log messages
@@ -232,7 +235,7 @@ class RichLog(val interface: Log) extends RichInterface[Log] {
 /**
  * Wrapper for mote beeper (interface).
  */
-class RichBeeper(val interface: Beeper) extends RichInterface[Beeper] {
+class RichBeeper(val interface: Beeper, val simulation: Simulation) extends RichInterface[Beeper] {
   /**
    * Get signal of mote beeper status.
    * @return boolean [[Signal]] of beeper status, `true` when beeping
@@ -245,7 +248,7 @@ class RichBeeper(val interface: Beeper) extends RichInterface[Beeper] {
 /**
  * Wrapper for mote button (interface).
  */
-class RichButton(val interface: Button) extends RichInterface[Button] {
+class RichButton(val interface: Button, val simulation: Simulation) extends RichInterface[Button] {
   /**
    * Get signal of mote button status.
    *
@@ -263,7 +266,7 @@ class RichButton(val interface: Button) extends RichInterface[Button] {
 /**
  * Wrapper for mote IP address (interface).
  */
-class RichIPAddress(val interface: IPAddress) extends RichInterface[IPAddress] {
+class RichIPAddress(val interface: IPAddress, val simulation: Simulation) extends RichInterface[IPAddress] {
   /**
    * Get signal of mote IP address.
    * @return [[Signal]] of mote IP address as string
@@ -276,7 +279,7 @@ class RichIPAddress(val interface: IPAddress) extends RichInterface[IPAddress] {
 /**
  * Wrapper for mote rime address (interface).
  */
-class RichRimeAddress(val interface: RimeAddress) extends RichInterface[RimeAddress] {
+class RichRimeAddress(val interface: RimeAddress, val simulation: Simulation) extends RichInterface[RimeAddress] {
   /**
    * Get signal of mote rime address.
    * @return [[Signal]] of mote rime address as string
@@ -289,7 +292,7 @@ class RichRimeAddress(val interface: RimeAddress) extends RichInterface[RimeAddr
 /**
  * Wrapper for mote ID (interface).
  */
-class RichMoteID(val interface: MoteID) extends RichInterface[MoteID] {
+class RichMoteID(val interface: MoteID, val simulation: Simulation) extends RichInterface[MoteID] {
   /**
    * Get signal of mote ID.
    * @return [[Signal]] of mote ID as integer

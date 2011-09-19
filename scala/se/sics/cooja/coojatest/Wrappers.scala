@@ -7,10 +7,11 @@ import reactive._
 import java.util.{Observable, Observer}
 
 import se.sics.cooja._
-import se.sics.cooja.interfaces._
+import interfaces._
 
-import se.sics.cooja.coojatest.interfacewrappers._
-import se.sics.cooja.coojatest.memorywrappers._
+import se.sics.cooja.coojatest._
+import interfacewrappers._
+import memorywrappers._
 
 
 
@@ -21,7 +22,8 @@ import se.sics.cooja.coojatest.memorywrappers._
 object Conversions {
   implicit def simToRichSim(s: Simulation) = new RichSimulation(s)
   implicit def moteToRichMote(m: Mote) = RichMote(m)
-  implicit def radioMediumToRichRadioMedium(rm: RadioMedium) = new RichRadioMedium(rm)
+  implicit def radioMediumToRichRadioMedium(rm: RadioMedium)(implicit sim: Simulation) =
+   new RichRadioMedium(rm, sim)
 }
 
 
@@ -177,27 +179,20 @@ object RichMote {
  */
 trait RichObservable {
   /**
-   * Type of functions adding an observer.
-   */
-  type addFunType = (Observer) => Unit
-
-  /**
    * Create a [[EventSource]] which is updated by evaluating the given function at each
    * observer notification.
    *
    * @param fun function which returns new event to be fired by eventsource, is called at every
    *   change of observed object
-   * @param addFun function of type `addFunType` which adds a new observer object to the
-   *   observed object
    * @return new [[EventSource]] which is updated at every change of observed object
    * @tparam ET result type of `fun` / type of eventsource events 
    */
-  def observedEvent[ET](fun: => ET)(implicit addFun: addFunType) = {
+  def observedEvent[ET](fun: => ET) = {
     // create new eventsource
     val es = new EventSource[ET]()
 
-    // add observer using addFun which calls fun and fires result
-    addFun(new Observer() {
+    // create observer which calls fun and fires result
+    createObserver(new Observer() {
       def update(obs: Observable, obj: Object) {
         es fire fun
       }
@@ -213,17 +208,15 @@ trait RichObservable {
    *
    * @param fun function which returns new value for signal, is called at every
    *   change of observed object
-   * @param addFun function of type `addFunType` which adds a new observer object to the
-   *   observed object
    * @return new [[Signal]] which is updated at every change of observed object
    * @tparam ET result type of `fun` / type of signal value 
    */
-  def observedSignal[ST](fun: => ST)(implicit addFun: addFunType) = {
+  def observedSignal[ST](fun: => ST) = {
     // create new signal, get initial value by calling fun
     val signal = Var[ST](fun)
 
-    // add observer using addFun which calls fun and sets signal to result
-    addFun(new Observer() {
+    // create observer which calls fun and sets signal to result
+    createObserver(new Observer() {
       def update(obs: Observable, obj: Object) {
         signal() = fun
       }
@@ -231,6 +224,40 @@ trait RichObservable {
 
     // return signal
     signal
+  }
+
+  /**
+   * Add a new observer to the observed object.
+   *
+   * @param o observer to add
+   */
+  protected def addObserver(o: Observer): Unit
+
+  /**
+   * Remove an observer from the observed object.
+   *
+   * @param o observer to remove
+   */
+  protected def removeObserver(o: Observer): Unit
+
+  /**
+   * Simulation this obserable belongs to.
+   */
+  def simulation: Simulation
+
+  /**
+   * Add observer to observable now and registers callback to remove observer at deactivation.
+   *
+   * @param o observer to add to obserable
+   */
+  protected def createObserver(o: Observer) {
+    // add observer using addFun
+    addObserver(o)
+
+    // remove observer when deactivating plugin
+    CoojaTestPlugin.forSim(simulation).onCleanUp {
+      removeObserver(o)
+    }
   }
 }
 
@@ -247,11 +274,8 @@ trait RichInterface[T <: MoteInterface] extends RichObservable {
    */
   val interface: T
   
-  /**
-   * default function for adding an observer to Observable.
-   * @see [[RichObservable]]
-   */
-  implicit val defaultAddFun: addFunType = interface.addObserver
+  def addObserver(o: Observer) { interface.addObserver(o) }
+  def removeObserver(o: Observer) { interface.deleteObserver(o) }
 }
 
 
@@ -259,13 +283,18 @@ trait RichInterface[T <: MoteInterface] extends RichObservable {
 /**
  * Generic radio medium wrapper.
  */
-class RichRadioMedium(val radioMedium: RadioMedium) extends RichObservable {
+class RichRadioMedium(val radioMedium: RadioMedium, val simulation: Simulation)
+    extends RichObservable {
   /**
    * Get a list of active radio connections as a signal.
    * @return [[Signal]] of a list of active radio connections
    */
   lazy val connections = observedSignal {
     radioMedium.asInstanceOf[se.sics.cooja.radiomediums.AbstractRadioMedium].getActiveConnections
-  }(radioMedium.addRadioMediumObserver) // needs addRadioMediumObserver instead of default addFun
+  }
+
+  // uses different observer functions
+  def addObserver(o: Observer) { radioMedium.addRadioMediumObserver(o) }
+  def removeObserver(o: Observer) { radioMedium.deleteRadioMediumObserver(o) }
 }
 

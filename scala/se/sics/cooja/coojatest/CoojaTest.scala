@@ -315,3 +315,17 @@ class CoojaTestPlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTest", 
     deactivate()
   }  
 }
+
+/**
+ * Some utility methods for CoojaTestPlugin.
+ */
+object CoojaTestPlugin {
+  /**
+   * Get the CoojaTestPlugin instance for a given simulation.
+   *
+   * @param sim simulation whose plugin will be returned
+   * @return instance of CoojaTestPlugin in sim
+   */
+  def forSim(sim: Simulation): CoojaTestPlugin =
+    sim.getGUI.getPlugin("CoojaTestPlugin").asInstanceOf[CoojaTestPlugin] 
+}

@@ -142,7 +142,7 @@ package rules {
     var active = true // active until closed
 
     // close file on plugin deactivation
-    sim.getGUI.getPlugin("CoojaTestPlugin").asInstanceOf[CoojaTestPlugin].onCleanUp {
+    CoojaTestPlugin.forSim(sim).onCleanUp {
       stream.close()
       active = false
     }
@@ -202,7 +202,7 @@ package rules {
     sim.getGUI.getDesktopPane.add(window)
 
     // close window on plugin deactivation
-    sim.getGUI.getPlugin("CoojaTestPlugin").asInstanceOf[CoojaTestPlugin].onCleanUp {
+    CoojaTestPlugin.forSim(sim).onCleanUp {
       window.dispose()
     }
 
