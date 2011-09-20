@@ -49,6 +49,11 @@ class RichSimulation(val sim: Simulation) {
    * @return [[RadioMedium]] of this simulation
    */
   def radioMedium = sim.getRadioMedium
+
+  /**
+   * Get the simulation mote relations.
+   */
+  lazy val moteRelations = new RichMoteRelations(sim)
 }
 
 
@@ -298,3 +303,19 @@ class RichRadioMedium(val radioMedium: RadioMedium, val simulation: Simulation)
   def removeObserver(o: Observer) { radioMedium.deleteRadioMediumObserver(o) }
 }
 
+
+
+/**
+ * Mote2Mote relation wrapper.
+ */
+class RichMoteRelations(val simulation: Simulation) extends RichObservable {
+  /**
+   * Get a list of all Mote2Mote relations in this simulation.
+   * @return [[Signal]] of a list of Mote2Mote relations
+   */
+  lazy val relations = observedSignal { simulation.getGUI.getMoteRelations }
+
+  // uses different observer functions
+  def addObserver(o: Observer) { simulation.getGUI.addMoteRelationsObserver(o) }
+  def removeObserver(o: Observer) { simulation.getGUI.deleteMoteRelationsObserver(o) }
+}
