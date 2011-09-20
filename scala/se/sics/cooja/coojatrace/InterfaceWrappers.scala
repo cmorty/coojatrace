@@ -55,6 +55,10 @@ object Conversions {
 
   implicit def button2RichButton(bt: Button)(implicit sim: Simulation) = new RichButton(bt, sim)
   implicit def buttonInterface = interface[Button] _
+
+  implicit def moteAttributes2RichMoteAttributes(ma: MoteAttributes)(implicit sim: Simulation) =
+    new RichMoteAttributes(ma, sim)
+  implicit def moteAttributes = interface[MoteAttributes] _
 }
 
 
@@ -92,6 +96,7 @@ trait InterfaceAccessors { this: RichMote =>
   def button = interface(classOf[Button])
   def clock = interface(classOf[Clock])
   def pir = interface(classOf[PIR])
+  def moteAttributes = interface(classOf[MoteAttributes])
 }
 
 
@@ -299,3 +304,23 @@ class RichMoteID(val interface: MoteID, val simulation: Simulation) extends Rich
    */
   lazy val moteID = observedSignal { interface.getMoteID }
 }
+
+
+
+/**
+ * Wrapper for mote attributes (interface).
+ */
+class RichMoteAttributes(val interface: MoteAttributes, val simulation: Simulation) extends RichInterface[MoteAttributes] {
+  /**
+   * Get attributes of mote.
+   * @return [[Signal]] of a (attributeName -> value) Map
+   */
+  lazy val attributes = observedSignal {
+    val attrs = for {
+      pair <- interface.getText.split("\n")
+      Array(attr, name) = pair.split("=")
+    } yield (attr, name)
+    attrs.toMap
+  }
+}
+
