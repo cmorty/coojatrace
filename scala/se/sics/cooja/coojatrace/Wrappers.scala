@@ -306,6 +306,52 @@ class RichRadioMedium(val radioMedium: RadioMedium, val simulation: Simulation)
 
 
 /**
+ * Simulation log message.
+ *
+ * @param mote mote which sent log message
+ * @param message the log message
+ */
+case class LogMessage(mote: Mote, message: String)
+
+/**
+ * (GUI) Log wrapper.
+ */
+class RichLog(val simulation: Simulation) {
+  /**
+   * Get a eventsource which fires for log messages of '''all''' motes in simulation.
+   *
+   * @return [[EventSource]] of LogMessages
+   */
+  lazy val messages = {
+    // create new eventsource
+    val es = new EventSource[LogMessage]()
+
+    // create observer which calls fun and fires result
+    val l = new SimEventCentral.LogOutputListener() {
+      def newLogOutput(loe: SimEventCentral.LogOutputEvent) {
+        es fire LogMessage(loe.getMote, loe.getMessage)
+      }
+      def removedLogOutput(loe: SimEventCentral.LogOutputEvent) {}
+      def moteWasAdded(mote: Mote) {}
+      def moteWasRemoved(mote: Mote) {}
+    }
+
+    // add listener to simulation
+    simulation.getEventCentral.addLogOutputListener(l)
+
+    // remove observer when deactivating plugin
+    CoojaTracePlugin.forSim(simulation).onCleanUp {
+      simulation.getEventCentral.removeLogOutputListener(l)
+    }
+
+    // return eventsource
+    es
+  }
+}
+
+
+
+/**
  * Mote2Mote relation wrapper.
  */
 class RichMoteRelations(val simulation: Simulation) extends RichObservable {
