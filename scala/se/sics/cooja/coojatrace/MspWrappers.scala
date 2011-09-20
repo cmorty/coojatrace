@@ -94,7 +94,7 @@ package mspwrappers {
           val bp = mote.getLastWatchpoint.asInstanceOf[mspmote.plugins.MspBreakpoint]
 
           // check if last checkpoint is "ours"
-          if((bp.getMote == mote) && (bp.getExecutableAddress == addr) ) {
+          if(bp.getExecutableAddress == addr) {
             // yes, fire event
             es fire name
           }
