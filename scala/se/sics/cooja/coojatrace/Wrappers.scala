@@ -53,7 +53,13 @@ class RichSimulation(val sim: Simulation) {
   /**
    * Get the simulation mote relations.
    */
-  lazy val moteRelations = new RichMoteRelations(sim)
+  lazy val moteRelations = new RichMoteRelations(sim).relations
+
+
+  /**
+   * Get simulation log.
+   */
+  lazy val log = new RichLog(sim).messages
 }
 
 
