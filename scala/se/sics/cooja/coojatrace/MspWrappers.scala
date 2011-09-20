@@ -12,6 +12,7 @@ import se.sics.cooja.mspmote._
 
 
 
+
 /**
  * MSP mote wrappers.
  */
@@ -22,6 +23,16 @@ package object mspwrappers {
    * @return MSP mote wrapper
    */
   implicit def mspMote2RichMote(mm: MspMote) = new MspRichMote(mm)
+
+
+
+  /**
+   + Wrap a mote for MSP-specific operations.
+   *
+   * @param mm mote to wrap, will fail if not subclass of MspMote
+   * @return MSP mote-specific wrapper
+   */
+  implicit def mspMoteOnlyWrap(mm: Mote) = new MspMoteOnlyWrapper(mm.asInstanceOf[MspMote])
   
   /**
    * Register MSP wrapper conversion in [[RichMote]] object.
@@ -35,12 +46,80 @@ package mspwrappers {
 
   /**
    * Wrapper for a MSP mote.
+   *
+   * @param mote MSP mote to wrap
    */
   class MspRichMote(mote: MspMote) extends RichMote(mote) {
     override lazy val memory = new MspMoteRichMemory(mote)
     override lazy val cpu = new MspMoteRichCPU(mote)
   }
   
+
+
+  /**
+   * Wrapper for MSP mote-specific operations.
+   *
+   * @param mote MSP mote to wrap
+   */
+  class MspMoteOnlyWrapper(mote: MspMote) {
+    /**
+     * Add a watchpoint (which will not stop the simulation) to this mote.
+     *
+     * @param filename source filename in which watchpoint is to be set
+     * @param line line in source file at which watchpoint is to be set
+     * @param name (optional) name for this watchpoint 
+     * @return EventStream which will fire name of watchpoint when it is reached
+     */
+    def watchpoint(filename: String, line: Int, name: String = null): EventStream[String] = {
+      // get file from filename
+      val file = mote.getSimulation.getGUI.restorePortablePath(new java.io.File(filename))
+
+      // calculate executable address from file and line
+      val addr = mote.getBreakpointsContainer.getExecutableAddressOf(file, line)
+
+      // generate name if not set
+      val breakname = if(name != null) null else filename + ":" + line
+
+      // add breakpoint which does not stop simulation
+      val bp = mote.getBreakpointsContainer.addBreakpoint(file, line, addr)
+      bp.setStopsSimulation(false)
+
+      // create result eventstream
+      val es = new EventSource[String]
+
+      // create watchpoint listener
+      val listener = new java.awt.event.ActionListener {
+        def actionPerformed(e: java.awt.event.ActionEvent) {
+          // get last breakpoint
+          val bp = mote.getLastWatchpoint.asInstanceOf[mspmote.plugins.MspBreakpoint]
+
+          // check if last checkpoint is "ours"
+          if((bp.getMote == mote) && (bp.getExecutableAddress == addr) ) {
+            // yes, fire event
+            es fire name
+          }
+        }
+      }
+
+      // add watchpoint listener
+      mote.addWatchpointListener(listener)
+
+      // remove watchpoint listener on plugin deactivation
+      CoojaTracePlugin.forSim(mote.getSimulation).onCleanUp {
+        mote.removeWatchpointListener(listener)
+      }
+
+      // return eventstream
+      es
+    }
+
+    /**
+     * Return a stracktrace for this mote.
+     *
+     * @return stacktrace as output from MSP CLI
+     */ 
+    def strackTrace = mote.getExecutionDetails
+  }
   
 
   /**
