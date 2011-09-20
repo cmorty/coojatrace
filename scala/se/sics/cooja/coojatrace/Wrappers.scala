@@ -357,9 +357,9 @@ class RichLog(val simulation: Simulation) {
 class RichMoteRelations(val simulation: Simulation) extends RichObservable {
   /**
    * Get a list of all Mote2Mote relations in this simulation.
-   * @return [[Signal]] of a list of Mote2Mote relations
+   * @return [[SeqSignal]] of a list of Mote2Mote relations
    */
-  lazy val relations = observedSignal { simulation.getGUI.getMoteRelations }
+  lazy val relations = SeqSignal( observedSignal { simulation.getGUI.getMoteRelations.toList } )
 
   // uses different observer functions
   def addObserver(o: Observer) { simulation.getGUI.addMoteRelationsObserver(o) }
