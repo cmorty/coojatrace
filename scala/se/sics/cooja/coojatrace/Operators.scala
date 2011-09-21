@@ -17,6 +17,7 @@ package object operators extends
   operators.StdDevOperator with
   operators.MaximumOperator with
   operators.MinimumOperator with
+  operators.DeltaOperator with
   operators.WithTimeOperator with
   operators.WithPositionOperator with
   operators.WindowOperator
@@ -125,6 +126,23 @@ package operators {
       es.foldLeft(maximum) {
         (minimum, event) => if(event < minimum) event else minimum
       }.hold(maximum)
+    }
+  }
+
+  /**
+   * Delta operator.
+   */
+  trait DeltaOperator {
+    /**
+     * Computes value differences received from eventstream.
+     * @param es [[EventStream]] for whose values deltas are computed
+     * @return [[EventStream]] of deltas
+     * @tparam T type of eventstream (must be implicitly convertable to Long)
+     */
+    def delta[T <% Long](es: EventStream[T]): EventStream[Long] = {
+      es.foldLeft((0L, 0L)) {
+        case ( (last, _), curr ) => (curr, curr - last)
+      }.map(_._2)
     }
   }
 
