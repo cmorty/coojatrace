@@ -165,7 +165,7 @@ class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace"
     // create interpreter
     interpreter = createInterpreter()
 
-    // import cooja and coojatrace classes, register motewrappers
+    // import cooja and coojatrace classes
     interpreter.interpret("""
       import reactive._
 
@@ -178,13 +178,32 @@ class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace"
       import magicsignals.MagicSignals._
       import rules._
       import operators._
-
-      import contikiwrappers._
-      contikiwrappers.register()
-      import mspwrappers._
-      mspwrappers.register()
     """)
     
+    // load and register contikimote wrappers if available
+    try {
+      Class.forName("se.sics.cooja.contikimote.ContikiMote", false, null)
+
+      interpreter.interpret("""
+        import contikiwrappers._
+        contikiwrappers.register()
+      """)
+    } catch {
+      case e: Exception => // ignore
+    }
+
+    // load and register mspmote wrappers if available
+    try {
+      Class.forName("se.sics.cooja.mspmote.MspMote", false, null)
+
+      interpreter.interpret("""
+        import mspwrappers._
+        mspwrappers.register()
+      """)
+    } catch {
+      case e: Exception => // ignore
+    }
+
     // make the simulation object available to test code
     interpreter.bind("sim", sim.getClass.getName, sim)
     
