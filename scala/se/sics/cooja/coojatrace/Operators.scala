@@ -4,6 +4,8 @@ package se.sics.cooja.coojatrace
 
 import reactive._
 
+import se.sics.cooja._
+
 
 
 /**
@@ -14,7 +16,8 @@ package object operators extends
   operators.AverageOperator with
   operators.StdDevOperator with
   operators.MaximumOperator with
-  operators.MinimumOperator
+  operators.MinimumOperator with
+  operators.WithTimeOperator
 
 package operators {
   /**
@@ -122,4 +125,21 @@ package operators {
       }.hold(maximum)
     }
   }
+
+  /**
+   * Time-adding operator.
+   */
+  trait WithTimeOperator {
+    /**
+     * Add the current simulation time to an event stream by turning each elemnt into a
+     * (time, value) tuple
+     * @param es [[EventStream]] to be timed
+     * @return [[EventStream]] of (time, value) tuples
+     * @tparam T type of eventstream
+     */
+    def withTime[T](es: EventStream[T])(implicit sim: Simulation): EventStream[Tuple2[Long, T]] = {
+      es.map(e => (sim.getSimulationTime, e))
+    }
+  }
+
 }
