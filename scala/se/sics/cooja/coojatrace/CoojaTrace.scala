@@ -182,26 +182,26 @@ class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace"
     
     // load and register contikimote wrappers if available
     try {
-      Class.forName("se.sics.cooja.contikimote.ContikiMote", false, null)
+      Class.forName("se.sics.cooja.contikimote.ContikiMote", false, sim.getGUI.projectDirClassLoader)
 
       interpreter.interpret("""
         import contikiwrappers._
         contikiwrappers.register()
       """)
     } catch {
-      case e: Exception => // ignore
+      case e: Exception => logger.info("ContikiMote wrappers not loaded.")
     }
 
     // load and register mspmote wrappers if available
     try {
-      Class.forName("se.sics.cooja.mspmote.MspMote", false, null)
+      Class.forName("se.sics.cooja.mspmote.MspMote", false, sim.getGUI.projectDirClassLoader)
 
       interpreter.interpret("""
         import mspwrappers._
         mspwrappers.register()
       """)
     } catch {
-      case e: Exception => // ignore
+      case e: Exception => logger.info("MspMote wrappers not loaded.")
     }
 
     // make the simulation object available to test code
