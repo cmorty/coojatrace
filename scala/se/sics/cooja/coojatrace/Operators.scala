@@ -18,6 +18,7 @@ package object operators extends
   operators.MaximumOperator with
   operators.MinimumOperator with
   operators.WithTimeOperator with
+  operators.WithPositionOperator with
   operators.WindowOperator
 
 package operators {
@@ -144,9 +145,9 @@ package operators {
   }
 
   /**
-   * Window operator.
+   * Position-adding operator.
    */
-  trait WindowOperator {
+  trait WithPositionOperator {
     /**
      * Adds position number to event stream.
      *
@@ -154,12 +155,65 @@ package operators {
      * @return [[EventStream]] of (numer, value) tuples
      * @tparam T type of eventstream
      */
-    private def withPosition[T](es: EventStream[T]) = es.foldLeft((-1, null.asInstanceOf[T])) {
-      case ((count, last), event) => (count+1, event)
+    def withPosition[T](es: EventStream[T]):EventStream[Tuple2[Int, T]] = {
+      es.foldLeft((-1, null.asInstanceOf[T])) {
+        case ( (count, last), event ) => (count+1, event)
+      }
+    }
+  }
+
+  /**
+   * Window operator.
+   */
+  trait WindowOperator { this: WithPositionOperator with WithTimeOperator =>
+     /**
+     * Applies a sliding window to event stream and returns a stream of windows.
+     * Each window is returned as a list of all corresponding values.
+     *
+     * @param es [[EventStream]] over which to "slide"
+     * @param start function which checks for last start and current value if new windows should be
+     *   started
+     * @param stop function whick checks for start and current value if window (with this start
+     *   value) should be closed
+     * @return [[EventStream]] of window lists
+     * @tparam T type of eventstream
+     */
+    def window[T](es: EventStream[T], start: (T, T) => Boolean, stop: (T, T) => Boolean)(implicit observing: Observing): EventStream[List[T]] = {
+      // output event stream
+      val outStream = new EventSource[List[T]]
+
+      // last start value      
+      var lastStart = null.asInstanceOf[T]
+       
+      // for each value where window starts...
+      for(event <- es.filter(event => start(lastStart, event))) {
+        lastStart = event
+
+        // create new list buffer and add first value
+        val window = new collection.mutable.ListBuffer[T]
+        window.append(event)
+
+        // for the next values until stop
+        var done = false
+        for(e <- es.takeWhile(e => done == false) ) {
+          if(stop(event, e)) {
+            // fire complete window list if window end is reached
+            done = true
+            outStream fire window.toList
+          } else {
+            // append to buffer
+            window.append(e)
+          }
+        }
+      }
+      
+      // return output stream
+      outStream
     }
 
+
     /**
-     * Applies a sliding window to event stream and returns a stream of windows.
+     * Applies a sliding position window to event stream and returns a stream of windows.
      * Each window is returned as a list of all corresponding values.
      *
      * @param es [[EventStream]] over which to "slide"
@@ -169,37 +223,96 @@ package operators {
      * @return [[EventStream]] of window lists
      * @tparam T type of eventstream
      */
-    def window[T](es: EventStream[T], range: Int, slide: Int, offset: Int)(implicit observing: Observing): EventStream[List[T]] = {
+    def posWindow[T](es: EventStream[T], range: Int, slide: Int, offset: Int)(implicit observing: Observing): EventStream[List[T]] = {
       require(offset >= 0)
       require(range > 0)
       require(slide > 0)
 
-      // output event stream
-      val outStream = new EventSource[List[T]]
-
-      val posStream = withPosition(es)
-      
-      // for each value...
-      posStream.foreach { case (pos, event) =>
-        // if a new window starts...
-        if( (pos >= offset) && ((pos - offset) % slide == 0) ) {
-          // create new list buffer and add first value
-          val window = new collection.mutable.ListBuffer[T]
-          window.append(event)
-
-          // for the next range values
-          for( (p, e) <- posStream.takeWhile(_._1 <= pos + range) ) {
-            // append to buffer
-            window.append(e)
-
-            // and fire complete window list if window end is reached
-            if(p == pos+range-1) outStream fire window.toList
-          }
-        }
+      // check for start position
+      val start: (Tuple2[Int, T], Tuple2[Int, T]) => Boolean = {
+        case (_, (pos, _)) => (pos >= offset) && ((pos - offset) % slide == 0)
       }
-      
-      // return output stream
-      outStream
+
+      // check for end position
+      val end: (Tuple2[Int, T], Tuple2[Int, T]) => Boolean = {
+        case ((startpos, _), (pos, _)) => pos >= startpos + range
+      }
+
+      // apply window(...) on stream with positions
+      for(win <- window(withPosition(es), start, end))
+        // and strip positions afterwards from each result window
+        yield( for( (pos, value) <- win) yield value )
+    }
+
+
+    /**
+     * Applies a sliding time window to event stream and returns a stream of windows.
+     * Each window is returned as a list of all corresponding values.
+     *
+     * @param es [[EventStream]] over which to "slide"
+     * @param range size of one window (microseconds between first and last value in one window)
+     * @oaram slide "space" between two windows (microseconds between two windows) 
+     * @param offset time in microseconds wait before starting first window
+     * @return [[EventStream]] of window lists
+     * @tparam T type of eventstream
+     */
+    def timeWindow[T](es: EventStream[T], range: Long, slide: Long, offset: Long)(implicit observing: Observing, sim: Simulation): EventStream[List[T]] = {
+      require(offset >= 0)
+      require(range > 0)
+      require(slide > 0)
+
+      // check for start time
+      val start: (Tuple2[Long, T], Tuple2[Long, T]) => Boolean = {
+        case ((lastTime, _), (time, _)) => (time - lastTime >= slide)
+        case (null, (time, _)) => (time >= offset)
+      }
+
+      // check for end time
+      val end: (Tuple2[Long, T], Tuple2[Long, T]) => Boolean = {
+        case ((starttime, _), (time, _)) => time >= starttime + range
+      }
+
+      // apply window(...) on stream with times
+      for(win <- window(withTime(es), start, end))
+        // and strip times afterwards from each result window
+        yield( for( (time, value) <- win) yield value )
+    }
+
+
+    /**
+     * Applies a sliding absolute time window to event stream and returns a stream of windows.
+     * Each window is returned as a list of all corresponding values.
+     * "Absolute time" means start time of next window is not influenced by end time of last.
+     *
+     * @param es [[EventStream]] over which to "slide"
+     * @param range size of one window (microseconds between first and last value in one window)
+     * @oaram slide "space" between two windows (microseconds between two windows) 
+     * @param offset time in microseconds wait before starting first window
+     * @return [[EventStream]] of window lists
+     * @tparam T type of eventstream
+     */
+    def absoluteTimeWindow[T](es: EventStream[T], range: Long, slide: Long, offset: Long)(implicit observing: Observing, sim: Simulation): EventStream[List[T]] = {
+      require(offset >= 0)
+      require(range > 0)
+      require(slide > 0)
+
+      // check for start time
+      val start: (Tuple2[Long, T], Tuple2[Long, T]) => Boolean = {
+        case ((lastTime, _), (time, _)) => 
+          ((time-offset) / slide)*slide > ((lastTime-offset) / slide)*slide
+        case (null, (time, _)) => (time >= offset)
+      }
+
+      // check for end time
+      val end: (Tuple2[Long, T], Tuple2[Long, T]) => Boolean = {
+        case ((starttime, _), (time, _)) => 
+          time >= ((starttime-offset)/slide)*slide + offset + range
+      }
+
+      // apply window(...) on stream with times
+      for(win <- window(withTime(es), start, end))
+        // and strip times afterwards from each result window
+        yield( for( (time, value) <- win) yield value )
     }
 
     /**
