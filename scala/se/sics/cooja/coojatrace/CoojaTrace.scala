@@ -192,7 +192,7 @@ class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace"
     interpreter.interpret("""
       implicit val _simulation = sim
       implicit val _observing = new Observing {}
-      implicit val _dyndeplog = new se.sics.cooja.coojatrace.magicsignals.DynDepLog
+      implicit val _dyndeplog = new se.sics.cooja.coojatrace.magicsignals.DynamicDepLogger
 
       Console.setOut(System.out)
     """)

@@ -6,17 +6,24 @@ import scala.util.DynamicVariable
 
 
 /**
- * Holds a dependency list for a MagicSignal.
- * @param deps list of dependencies
+ * Tracks dependencies for a MagicSignal.
  */
-class DepLogger(var deps:List[Signal[_]])
+trait DepLogger {
+  /**
+   * Add a dependency signal to list.
+   * @param s dependency signal
+   */
+  def addDependency(s: Signal[_])
+}
 
 
 
 /**
  * Dynamic variable which points to the current [[se.sics.cooja.coojatrace.magicsignals.DepLogger]].
  */
-class DynDepLog extends DynamicVariable[DepLogger](new DepLogger(Nil))
+class DynamicDepLogger extends DynamicVariable[DepLogger](new DepLogger {
+  def addDependency(s: Signal[_]) {} // no dependency tracking when simulating
+})
 
 
 
@@ -46,9 +53,12 @@ object MagicSignals {
    * @return [[Signal]] created by reapplying f at every change of the dependency signals
    * @tparam T result type of f / type of newly created signal
    */
-  implicit def wrap[T](f: => T)(implicit deplog: DynDepLog): Signal[T] = {
+  implicit def wrap[T](f: => T)(implicit deplog: DynamicDepLogger): Signal[T] = {
     // create a new DepLogger to track dependencies
-    val deplogger = new DepLogger(Nil)
+    val deps = collection.mutable.ListBuffer[Signal[_]]()
+    val deplogger = new DepLogger {
+      def addDependency(s: Signal[_]) { deps.append(s) }
+    }
 
     // evaluate f with the global deplog pointing to our new deplogger
     deplog.withValue(deplogger) {
@@ -57,7 +67,7 @@ object MagicSignals {
 
     // flatmap all dependency signals into one new signal, whose value is computed
     // by reevaluating f at every change
-    deplogger.deps.tail.foldLeft(deplogger.deps.head.map(s => f)) {
+    deps.tail.foldLeft(deps.head.map(s => f)) {
       case (combined, signal) => signal.flatMap(s => combined)
     }
   }
@@ -75,9 +85,9 @@ object MagicSignals {
    * @return current value of signal
    * @tparam T type of signal value
    */
-  implicit def unwrap[T](s: Signal[T])(implicit deplog: DynDepLog): T = {
+  implicit def unwrap[T](s: Signal[T])(implicit deplog: DynamicDepLogger): T = {
     // add to dependency list
-    deplog.value.deps ::= s
+    deplog.value.addDependency(s)
 
     // return current value
     s.now
