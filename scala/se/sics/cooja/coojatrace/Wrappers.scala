@@ -292,17 +292,63 @@ trait RichInterface[T <: MoteInterface] extends RichObservable {
 
 
 /**
+ * Radio transmission wrapper.
+ *
+ * @param startTime start time of transmission in microseconds
+ * @param endTime end time of transmission in microseconds
+ * @param source source [[Radio]]
+ * @param destinations list of destination [[Radio]]s
+ * @param packet transmitted [[RadioPacket]]
+ */
+case class RadioTransmission(startTime: Long, endTime: Long, source: Radio,
+  destinations: List[Radio], packet: RadioPacket) {
+  /**
+   * Source mote (if any).
+   */
+  lazy val sourceMote = source.getMote
+
+  /**
+   * List of destination motes (if any).
+   */
+  lazy val destinationMotes = destinations.map(_.getMote)
+
+  /**
+   * Packet data bytes.
+   */
+  lazy val packetData = packet.getPacketData
+
+  /**
+   * Packet data in human readable form.
+   */
+  lazy val packetString = packetData.map(b => "%02X".format(b)).mkString(" ")
+}
+
+/**
  * Generic radio medium wrapper.
  */
 class RichRadioMedium(val radioMedium: RadioMedium, val simulation: Simulation)
     extends RichObservable {
   /**
-   * Get a list of active radio connections as a signal.
+   * List of active radio connections as a signal.
    * @return [[Signal]] of a list of active radio connections
    */
-  lazy val connections = observedSignal {
-    radioMedium.asInstanceOf[se.sics.cooja.radiomediums.AbstractRadioMedium].getActiveConnections
-  }
+  lazy val connections = SeqSignal( observedSignal {
+    radioMedium.asInstanceOf[se.sics.cooja.radiomediums.AbstractRadioMedium].getActiveConnections.toList
+  })
+
+  /**
+   * Stream of all completed radio transmissions.
+   * @return [[EventStream]] of [[RadioTransmission]]s.
+   */
+  lazy val transmissions = observedEvent {
+    val conn = radioMedium.getLastConnection
+    if(conn == null)
+      null
+    else {
+      RadioTransmission(conn.getStartTime, simulation.getSimulationTime, conn.getSource,
+                        conn.getDestinations.toList, conn.getSource.getLastPacketTransmitted)
+    }
+  }.filter(_ != null)
 
   // uses different observer functions
   def addObserver(o: Observer) { radioMedium.addRadioMediumObserver(o) }
