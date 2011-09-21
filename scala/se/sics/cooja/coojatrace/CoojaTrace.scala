@@ -313,8 +313,6 @@ class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace"
    * Clean up plugin when closed.
    */
   override def closePlugin() { 
-    logger.debug("closePlugin() called")
-
     deactivate()
   }  
 }
