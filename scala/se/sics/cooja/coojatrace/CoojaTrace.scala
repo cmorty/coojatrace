@@ -225,7 +225,10 @@ class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace"
           stream.print(msg)
         }
       }
-      if(GUI.showErrorDialog(this, "Scala compilation error", e, true)) activate()
+      if(GUI.showErrorDialog(this, "Scala compilation error", e, true)) 
+        activate()
+      else
+        deactivate()
     }
   }
 
