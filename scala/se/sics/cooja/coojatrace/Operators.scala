@@ -17,7 +17,8 @@ package object operators extends
   operators.StdDevOperator with
   operators.MaximumOperator with
   operators.MinimumOperator with
-  operators.WithTimeOperator
+  operators.WithTimeOperator with
+  operators.WindowOperator
 
 package operators {
   /**
@@ -139,6 +140,97 @@ package operators {
      */
     def withTime[T](es: EventStream[T])(implicit sim: Simulation): EventStream[Tuple2[Long, T]] = {
       es.map(e => (sim.getSimulationTime, e))
+    }
+  }
+
+  /**
+   * Window operator.
+   */
+  trait WindowOperator {
+    /**
+     * Adds position number to event stream.
+     *
+     * @param es [[EventStream]] to number
+     * @return [[EventStream]] of (numer, value) tuples
+     * @tparam T type of eventstream
+     */
+    private def withPosition[T](es: EventStream[T]) = es.foldLeft((-1, null.asInstanceOf[T])) {
+      case ((count, last), event) => (count+1, event)
+    }
+
+    /**
+     * Applies a sliding window to event stream and returns a stream of windows.
+     * Each window is returned as a list of all corresponding values.
+     *
+     * @param es [[EventStream]] over which to "slide"
+     * @param range size of one window (number of values contained in one window)
+     * @oaram slide "space" between two windows (number of values between two windows) 
+     * @param offset number of values to wait before starting first window
+     * @return [[EventStream]] of window lists
+     * @tparam T type of eventstream
+     */
+    def window[T](es: EventStream[T], range: Int, slide: Int, offset: Int)(implicit observing: Observing): EventStream[List[T]] = {
+      require(offset >= 0)
+      require(range > 0)
+      require(slide > 0)
+
+      // output event stream
+      val outStream = new EventSource[List[T]]
+
+      val posStream = withPosition(es)
+      
+      // for each value...
+      posStream.foreach { case (pos, event) =>
+        // if a new window starts...
+        if( (pos >= offset) && ((pos - offset) % slide == 0) ) {
+          // create new list buffer and add first value
+          val window = new collection.mutable.ListBuffer[T]
+          window.append(event)
+
+          // for the next range values
+          for( (p, e) <- posStream.takeWhile(_._1 <= pos + range) ) {
+            // append to buffer
+            window.append(e)
+
+            // and fire complete window list if window end is reached
+            if(p == pos+range-1) outStream fire window.toList
+          }
+        }
+      }
+      
+      // return output stream
+      outStream
+    }
+
+    /**
+     * Applies a sliding window to event stream and returns a stream of streams.
+     * Each stream fires its corresponding values from original stream.
+     * 
+     * '''Note:''' offset must be at least 1, as there is no way to receive the
+     * first event stream AND its first event at the same time.
+     *
+     * @param es [[EventStream]] over which to "slide"
+     * @param range size of one window (number of values contained in one window)
+     * @oaram slide "space" between two windows (number of values between two windows) 
+     * @param offset number of values to wait before starting first window
+     * @return [[EventStream]] of window lists
+     * @tparam T type of eventstream
+     */
+    def windowStream[T](es: EventStream[T], range: Int, slide: Int, offset: Int)(implicit observing: Observing):
+        EventStream[EventStream[T]] = {
+      require(offset > 0)
+      require(range > 0)
+      require(slide > 0)
+
+      val posStream = withPosition(es)
+
+      // for each value...
+      posStream.collect {
+        // if NEXT position starts new window...
+        case (pos, event) if( (pos+1>= offset) && ((pos+1-offset) % slide == 0) ) =>
+          // return a stream of next range values
+          posStream.takeWhile(_._1 <= pos + range).map(_._2)
+      }
     }
   }
 
