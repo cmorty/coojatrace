@@ -3,9 +3,9 @@ package se.sics.cooja.coojatrace.interfacewrappers
 
 
 import se.sics.cooja._
-import se.sics.cooja.coojatrace.wrappers._
+import interfaces._
 
-import se.sics.cooja.interfaces._
+import coojatrace.wrappers._
 
 import scala.collection.JavaConverters._
 
@@ -217,9 +217,21 @@ class RichRadio(val interface: Radio, val simulation: Simulation) extends RichIn
    */
   lazy val position = observedSignal { interface.getPosition }
 
-  // TODO: only fire at right event
-  //lazy val packetsTransmitted = observedSignal { interface.getLastPacketTransmitted }
-  //lazy val packetsReceived = observedSignal { interface.getLastPacketReceived } 
+  /**
+   * Get stream of transmitted radio packets.
+   * @return [[EventStream]] of transmitted [[RadioPacket]]s
+   */
+  lazy val packetsTransmitted = observedEvent {
+    interface.getLastPacketTransmitted
+  }.filter(_ => interface.getLastEvent == Radio.RadioEvent.PACKET_TRANSMITTED)
+
+  /**
+   * Get stream of received radio packets.
+   * @return [[EventStream]] of received [[RadioPacket]]s
+   */
+  lazy val packetsReceived = observedEvent {
+    interface.getLastPacketReceived 
+  }.filter(_ => interface.getLastEvent == Radio.RadioEvent.RECEPTION_FINISHED)
 }
 
 
