@@ -1,4 +1,4 @@
-package se.sics.cooja.coojatrace.wrappers
+package se.sics.cooja.coojatrace
 
 
 
@@ -9,7 +9,7 @@ import java.util.{Observable, Observer}
 import se.sics.cooja._
 import interfaces._
 
-import se.sics.cooja.coojatrace._
+import coojatrace._
 import interfacewrappers._
 import memorywrappers._
 
@@ -19,15 +19,16 @@ import memorywrappers._
  * Implicit conversions from original cooja simulation/mote/radiomedium objects 
  * to their rich wrappers.
  */
-object Conversions {
-  implicit def simToRichSim(s: Simulation) = new RichSimulation(s)
-  implicit def moteToRichMote(m: Mote) = RichMote(m)
-  implicit def radioMediumToRichRadioMedium(rm: RadioMedium)(implicit sim: Simulation) =
-   new RichRadioMedium(rm, sim)
+package object wrappers {
+  implicit val simWrapper = RichSimulation.wrap
+  implicit val moteWrapper = RichMote.wrap
+  implicit def radioMediumWrapper(rm: RadioMedium)(implicit sim: Simulation) = 
+    RichRadioMedium.wrap(rm)
 }
 
 
-
+package wrappers {
+  
 /**
  * Rich wrapper for a [[Simulation]].
  */
@@ -68,6 +69,9 @@ class RichSimulation(val simulation: Simulation) extends RichObservable {
   protected def removeObserver(o: Observer) { simulation.deleteMillisecondObserver(o) }
 }
 
+object RichSimulation {
+  implicit val wrap: Simulation => RichSimulation = new RichSimulation(_)
+}
 
 
 /**
@@ -180,6 +184,8 @@ object RichMote {
   def apply(mote: Mote): RichMote = cache.getOrElseUpdate(mote,
     conversions.find(_.isDefinedAt(mote)).getOrElse(defaultConversion).apply(mote)
   )
+
+  implicit val wrap: Mote => RichMote = RichMote(_)
 
   /**
    * Clears mote conversion cache.
@@ -303,20 +309,31 @@ trait RichInterface[T <: MoteInterface] extends RichObservable {
  * @param startTime start time of transmission in microseconds
  * @param endTime end time of transmission in microseconds
  * @param source source [[Radio]]
- * @param destinations list of destination [[Radio]]s
+ * @param destinations set of destination [[Radio]]s
+ * @param interfered set of [[Radio]]s interfered by this transmission (including destinations)
  * @param packet transmitted [[RadioPacket]]
  */
 case class RadioTransmission(startTime: Long, endTime: Long, source: Radio,
-  destinations: List[Radio], packet: RadioPacket) {
+  destinations: Set[Radio], interfered: Set[Radio], packet: RadioPacket) {
   /**
    * Source mote (if any).
    */
   lazy val sourceMote = source.getMote
 
   /**
-   * List of destination motes (if any).
+   * Set of destination motes (if any).
    */
   lazy val destinationMotes = destinations.map(_.getMote)
+
+  /**
+   * Set of interferred motes (if any).
+   */
+  lazy val interferedMote = interfered.map(_.getMote)
+
+  /**
+   * Set of radios interfered by this transmission excluding destinations.
+   */
+  lazy val interferedNonDestinations = interfered -- destinations
 
   /**
    * Packet data bytes.
@@ -332,7 +349,7 @@ case class RadioTransmission(startTime: Long, endTime: Long, source: Radio,
 /**
  * Generic radio medium wrapper.
  */
-class RichRadioMedium(val radioMedium: RadioMedium, val simulation: Simulation)
+class RichRadioMedium(val radioMedium: RadioMedium)(implicit val simulation: Simulation)
     extends RichObservable {
   /**
    * List of active radio connections as a signal.
@@ -352,7 +369,8 @@ class RichRadioMedium(val radioMedium: RadioMedium, val simulation: Simulation)
       null
     else {
       RadioTransmission(conn.getStartTime, simulation.getSimulationTime, conn.getSource,
-                        conn.getDestinations.toList, conn.getSource.getLastPacketTransmitted)
+                        conn.getDestinations.toSet, conn.getInterfered.toSet,
+                        conn.getSource.getLastPacketTransmitted)
     }
   }.filter(_ != null)
 
@@ -361,6 +379,10 @@ class RichRadioMedium(val radioMedium: RadioMedium, val simulation: Simulation)
   def removeObserver(o: Observer) { radioMedium.deleteRadioMediumObserver(o) }
 }
 
+object RichRadioMedium {
+  implicit def wrap(rm: RadioMedium)(implicit sim: Simulation): RichRadioMedium =
+    new RichRadioMedium(rm)
+}
 
 
 /**
@@ -423,3 +445,6 @@ class RichMoteRelations(val simulation: Simulation) extends RichObservable {
   def addObserver(o: Observer) { simulation.getGUI.addMoteRelationsObserver(o) }
   def removeObserver(o: Observer) { simulation.getGUI.deleteMoteRelationsObserver(o) }
 }
+
+} // package wrappers
+

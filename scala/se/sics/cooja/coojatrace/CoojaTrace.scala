@@ -173,7 +173,7 @@ class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace"
       import interfaces._
       
       import coojatrace._
-      import wrappers.Conversions._
+      import wrappers._
       import interfacewrappers.Conversions._
       import magicsignals.MagicSignals._
       import rules._
