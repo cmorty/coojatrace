@@ -155,7 +155,7 @@ case class LogFile(file: String, columns: List[String] = List("Value"), timeColu
   // active until file is closed
   var active = true
 
-  // 
+  // all used columns
   val allColumns = if(timeColumn != null) (timeColumn :: columns) else columns
 
   // close file on plugin deactivation
@@ -207,7 +207,7 @@ case class LogWindow(name: String, columns: List[String] = List("Value"), timeCo
   }
 
   // add time column if not disabled
-  if(timeColumn != null) model.addColumn("Time")
+  if(timeColumn != null) model.addColumn(timeColumn)
 
   // add other columns
   columns foreach model.addColumn
@@ -230,7 +230,7 @@ case class LogWindow(name: String, columns: List[String] = List("Value"), timeCo
 
   def log(time: Long, values: List[_]) {
     // check for right number of columns
-    require(values.size == model.getColumnCount, "incorrect column count")
+    require(values.size == columns.size, "incorrect column count")
 
     // create new java vector for row values
     val v = new java.util.Vector[Object](values.length + 1)
