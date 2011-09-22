@@ -1,29 +1,7 @@
-package se.sics.cooja.coojatrace.magicsignals
+package se.sics.cooja.coojatrace
 
 import reactive._
 import scala.util.DynamicVariable
-
-
-
-/**
- * Tracks dependencies for a MagicSignal.
- */
-trait DepLogger {
-  /**
-   * Add a dependency signal to list.
-   * @param s dependency signal
-   */
-  def addDependency(s: Signal[_])
-}
-
-
-
-/**
- * Dynamic variable which points to the current [[se.sics.cooja.coojatrace.magicsignals.DepLogger]].
- */
-class DynamicDepLogger extends DynamicVariable[DepLogger](new DepLogger {
-  def addDependency(s: Signal[_]) {} // no dependency tracking when simulating
-})
 
 
 
@@ -38,7 +16,7 @@ class DynamicDepLogger extends DynamicVariable[DepLogger](new DepLogger {
  *  can be written instead of 
  * {{{ for(s <- stringSignal; i <- intSignal) yield(i*5 + s.length) }}}
  */
-object MagicSignals {
+package object magicsignals {
   /**
    * Implicitly wrap an expression into a signal of the expressions' result type. Every signal
    * which is implicitly unwrapped will be added as a dependency for this new signal so that
@@ -101,3 +79,29 @@ object MagicSignals {
     s.now
   }
 }
+
+
+
+package magicsignals {
+
+/**
+ * Tracks dependencies for a MagicSignal.
+ */
+trait DepLogger {
+  /**
+   * Add a dependency signal to list.
+   * @param s dependency signal
+   */
+  def addDependency(s: Signal[_])
+}
+
+
+
+/**
+ * Dynamic variable which points to the current [[se.sics.cooja.coojatrace.magicsignals.DepLogger]].
+ */
+class DynamicDepLogger extends DynamicVariable[DepLogger](new DepLogger {
+  def addDependency(s: Signal[_]) {} // no dependency tracking when simulating
+})
+
+} // package magicsignals
