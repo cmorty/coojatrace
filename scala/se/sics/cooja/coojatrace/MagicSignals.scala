@@ -65,10 +65,18 @@ object MagicSignals {
       val v0 = f
     }
 
-    // flatmap all dependency signals into one new signal, whose value is computed
-    // by reevaluating f at every change
-    deps.tail.foldLeft(deps.head.map(s => f)) {
-      case (combined, signal) => signal.flatMap(s => combined)
+    
+    if(deps.isEmpty) {
+      // no dependencies found? return a Val but warn as well
+      val logger = org.apache.log4j.Logger.getLogger(this.getClass)
+      logger.warn("no dependencies found when wrapping value " + f + ", creating Val instead")
+      Val(f)
+    } else {
+      // flatmap all dependency signals into one new signal, whose value is computed
+      // by reevaluating f at every change
+      deps.tail.foldLeft(deps.head.map(s => f)) {
+        case (combined, signal) => signal.flatMap(s => combined)
+      }
     }
   }
 
