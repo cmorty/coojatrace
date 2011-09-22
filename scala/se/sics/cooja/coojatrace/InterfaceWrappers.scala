@@ -152,7 +152,9 @@ class RichPosition(val interface: Position, val simulation: Simulation) extends 
 /**
  * Wrapper for mote radio interface.
  */
-class RichRadio(val interface: Radio, val simulation: Simulation) extends RichInterface[Radio]  {
+class RichRadio(val interface: Radio, sim: Simulation) extends RichInterface[Radio]  {
+  implicit val simulation = sim
+
   /**
    * Get eventstream of mote radio interface events.
    * @return [[EventStream]] of radio events
@@ -232,6 +234,16 @@ class RichRadio(val interface: Radio, val simulation: Simulation) extends RichIn
   lazy val packetsReceived = observedEvent {
     interface.getLastPacketReceived 
   }.filter(_ => interface.getLastEvent == Radio.RadioEvent.RECEPTION_FINISHED)
+
+  /**
+   * Radio transmissions started by this radio.
+   */
+  lazy val transmissions = simulation.radioMedium.transmissions.filter(_.source == interface)
+
+  /**
+   * Radio transmissions received by this radio. Includes interfered transmissions!
+   */
+  lazy val receptions = simulation.radioMedium.transmissions.filter(_.destinations.contains(interface))
 }
 
 
