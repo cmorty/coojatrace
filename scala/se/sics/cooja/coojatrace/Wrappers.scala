@@ -133,21 +133,11 @@ class RichMote(val mote: Mote) extends InterfaceAccessors {
   def cpu: RichCPU = throw new Exception("Unsupported for this mote type")
   
   /**
-   * Get mote variable names and addresses.
-   * @return map of (address -> variablename) elements
-   */
-  lazy val varAddresses = {
-    memory.memory.getVariableNames.map {
-      name => (memory.memory.getVariableAddress(name), name)
-    }.toMap
-  }
-
-  /**
    * Get the current contiki process as a signal.
    * @return [[Signal]] of currently running [[Process]]
    */
   lazy val currentProcess = {
-    memory.intVar("process_current").map(addr => Process(varAddresses(addr), addr))
+    memory.intVar("process_current").map(addr => Process(mote.memory.varAddresses(addr), addr))
   }
 }
 

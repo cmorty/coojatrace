@@ -244,6 +244,16 @@ trait RichMoteMemory {
 
   val logger = org.apache.log4j.Logger.getLogger(this.getClass)  // DEBUG
 
+  /**
+   * Get mote variable names and addresses.
+   * @return map of (address -> variablename) elements
+   */
+  lazy val varAddresses = {
+    memory.getVariableNames.map {
+      name => (memory.getVariableAddress(name), name)
+    }.toMap
+  }
+
   protected val variables = collection.mutable.WeakHashMap[MemVar[_], Null]()
 
   protected[memorywrappers] def addVariable[T](addr: Int, typ: MemVarType[T]): Signal[T] =
