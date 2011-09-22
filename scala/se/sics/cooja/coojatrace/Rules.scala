@@ -208,7 +208,7 @@ package rules {
 
     def log(time: Long, values: List[_]) {
       // check for right number of columns
-      require(values.size == model.getColumnCount, "incorrect column count")
+      require(values.size == model.getColumnCount - 1, "incorrect column count")
 
       // create new java vector for row values
       val v = new java.util.Vector[Object](values.length + 1)
