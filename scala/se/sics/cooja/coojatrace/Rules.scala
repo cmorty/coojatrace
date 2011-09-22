@@ -131,16 +131,23 @@ trait LogDestination {
  * A [[LogDestination]] which writes into a file.
  *
  * @param file filename of logfile. Will be created or cleared if needed
- * @param sep string used to seperate columns, default is one tab character
+ * @param columns (optional) column name list (sets column count), default: "Value"
+ * @param timeColumn (optional) column name for simulation time. When set to `null`, time column
+ *   will not be logged, default: "Time"
+ * @param sep (optional) string used to seperate columns, default: one tab character
  * @param sim the current [[Simulation]]
  */
-case class LogFile(file: String, sep: String = "\t")(implicit sim: Simulation) extends LogDestination {
+case class LogFile(file: String, columns: List[String] = List("Value"), timeColumn: String = "Time", header: Boolean = true, sep: String = "\t")(implicit sim: Simulation) extends LogDestination {
   /**
    * PrintWriter for writing to file
    */
   val stream = new PrintWriter(new BufferedWriter(new FileWriter(file)))
 
-  var active = true // active until closed
+  // active until file is closed
+  var active = true
+
+  // 
+  val allColumns = if(timeColumn != null) (timeColumn :: columns) else columns
 
   // close file on plugin deactivation
   CoojaTracePlugin.forSim(sim).onCleanUp {
@@ -153,11 +160,15 @@ case class LogFile(file: String, sep: String = "\t")(implicit sim: Simulation) e
     def update(obs: Observable, obj: Object) {
       if(!sim.isRunning) stream.flush()
     }
-  })
+    })
+
+  // print header if enabled
+  if(header == true) stream println allColumns.mkString(sep)
 
   def log(time: Long, values: List[_]) {
-    // join time and values with seperator and print
-    stream println (time :: values).mkString(sep)
+    // join values (and time if enabled) with seperator and print 
+    val out = if(timeColumn != null) (time :: values) else values
+    stream println out.mkString(sep)
   }
 }
 
@@ -168,7 +179,7 @@ case class LogFile(file: String, sep: String = "\t")(implicit sim: Simulation) e
  * @param valueNames (optional) header names for value columns
  * @param sim the current [[Simulation]]
  */
-case class LogWindow(name: String, valueNames: String*)(implicit sim: Simulation) extends LogDestination {
+case class LogWindow(name: String, columns: List[String] = List("Value"), timeColumn: String = "Time")(implicit sim: Simulation) extends LogDestination {
   /**
    * Newly created window (actually an [[InternalFrame]]).
    */
@@ -184,12 +195,11 @@ case class LogWindow(name: String, valueNames: String*)(implicit sim: Simulation
     override def isCellEditable(row: Int, col: Int) = false
   }
 
-  // add columns
-  model.addColumn("Time")
-  if(valueNames.isEmpty)
-    model.addColumn("Value")
-  else
-    valueNames foreach model.addColumn
+  // add time column if not disabled
+  if(timeColumn != null) model.addColumn("Time")
+
+  // add other columns
+  columns foreach model.addColumn
 
   /**
    * Table to display log values
@@ -214,8 +224,8 @@ case class LogWindow(name: String, valueNames: String*)(implicit sim: Simulation
     // create new java vector for row values
     val v = new java.util.Vector[Object](values.length + 1)
 
-    // add timestamp in milliseconds
-    v.addElement((time/1000.0).asInstanceOf[AnyRef])
+    // add timestamp in milliseconds if enabled
+    if(timeColumn != null) v.addElement((time/1000.0).asInstanceOf[AnyRef])
 
     // add value columns
     for(x <- values) v.addElement(x.asInstanceOf[AnyRef])
