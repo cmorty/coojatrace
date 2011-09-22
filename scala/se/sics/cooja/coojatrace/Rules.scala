@@ -65,18 +65,23 @@ package object rules {
   }
 
   /**
-   * Create new rule to log an eventstream.
+   * Create new rule to log an eventstream and any number of signals to sample with.
    * @param to [[LogDestination]]-object where values shall be logged to
-   * @param es [[EventStream]] to be logged.
+   * @param es [[EventStream]] to be logged. Multiple columns can be logged by passing an event
+   *   strean of 
+   * @param sig (optional) [[Signal]]s which will be sampled at every new event from es. Signal
+   *   values will '''not''' be logged as they change, but '''only''' when es fires!
    * @param sim the current [[Simulation]]
+   * @tparan T type of event stream to log
    */
-  def log[T](to: LogDestination, es: EventStream[T])(implicit sim: Simulation, m: Manifest[T]) {
+  def log[T](to: LogDestination, es: EventStream[T], sig: Signal[_]*)(implicit sim: Simulation, m: Manifest[T]) {
     // pass an EventStream[List[_]] directly, otherwise map it to one-element List
-    if(m <:< manifest[List[_]]) // manifests against type erasure
-      logrules ::= new LogRule(to, sim, es.asInstanceOf[EventStream[List[_]]]) 
+    val stream = if(m <:< manifest[List[_]]) // manifests against type erasure
+      es.asInstanceOf[EventStream[List[_]]].map(_ ::: sig.toList.map(_.now))
     else
-      logrules ::= new LogRule(to, sim, es.map(e => List(e)))
-  }
+      es.map(_ :: sig.toList.map(_.now))
+    logrules ::= new LogRule(to, sim, stream)
+  }  
 
   /**
    * Resets all active rules.
