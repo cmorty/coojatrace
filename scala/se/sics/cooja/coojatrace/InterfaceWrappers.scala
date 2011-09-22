@@ -1,4 +1,4 @@
-package se.sics.cooja.coojatrace.interfacewrappers
+package se.sics.cooja.coojatrace
 
 
 
@@ -14,7 +14,7 @@ import scala.collection.JavaConverters._
 /**
  * Implicit conversions from original cooja mote interfaces to their rich wrappers.
  */
-object Conversions {
+package object interfacewrappers {
   /**
    * Cast interface to specified subtype.
    *
@@ -26,17 +26,20 @@ object Conversions {
    */
   private def interface[T <: MoteInterface](i: MoteInterface): T = i.asInstanceOf[T]
   
-  implicit def led2RichLED(i: LED)(implicit sim: Simulation) = new RichLED(i, sim)
+  implicit def led2RichLED(i: LED)(implicit sim: Simulation) =
+    new RichLED(i, sim)
   implicit def ledInterface = interface[LED] _
 
-  implicit def radio2RichRadio(r: Radio)(implicit sim: Simulation) = new RichRadio(r, sim)
+  implicit def radio2RichRadio(r: Radio)(implicit sim: Simulation) =
+    new RichRadio(r, sim)
   implicit def radioInterface = interface[Radio] _
 
   implicit def position2RichPosition(p: Position)(implicit sim: Simulation) = 
     new RichPosition(p, sim)
   implicit def positionInterface = interface[Position] _
 
-  implicit def log2RichLog(l: Log)(implicit sim: Simulation) = new RichLog(l, sim)
+  implicit def log2RichLog(l: Log)(implicit sim: Simulation) =
+    new RichLog(l, sim)
   implicit def logInterface = interface[Log] _
 
   implicit def ipAddress2RichIPAddress(ia: IPAddress)(implicit sim: Simulation) = 
@@ -47,13 +50,16 @@ object Conversions {
     new RichRimeAddress(ra, sim)
   implicit def rimeAddressInterface = interface[RimeAddress] _
 
-  implicit def moteID2RichMoteID(id: MoteID)(implicit sim: Simulation) = new RichMoteID(id, sim)
+  implicit def moteID2RichMoteID(id: MoteID)(implicit sim: Simulation) =
+    new RichMoteID(id, sim)
   implicit def moteIDInterface = interface[MoteID] _
 
-  implicit def beeper2RichBeeper(b: Beeper)(implicit sim: Simulation) = new RichBeeper(b, sim)
+  implicit def beeper2RichBeeper(b: Beeper)(implicit sim: Simulation) = 
+    new RichBeeper(b, sim)
   implicit def beeperInterface = interface[Beeper] _
 
-  implicit def button2RichButton(bt: Button)(implicit sim: Simulation) = new RichButton(bt, sim)
+  implicit def button2RichButton(bt: Button)(implicit sim: Simulation) =
+    new RichButton(bt, sim)
   implicit def buttonInterface = interface[Button] _
 
   implicit def moteAttributes2RichMoteAttributes(ma: MoteAttributes)(implicit sim: Simulation) =
@@ -62,6 +68,8 @@ object Conversions {
 }
 
 
+
+package interfacewrappers {
 
 /**
  * Accessor functions for mote interfaces (only to reduce typing).
@@ -348,3 +356,4 @@ class RichMoteAttributes(val interface: MoteAttributes, val simulation: Simulati
   }
 }
 
+} // package interfacewrappers
