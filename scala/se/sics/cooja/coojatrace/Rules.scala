@@ -70,8 +70,12 @@ package object rules {
    * @param es [[EventStream]] to be logged.
    * @param sim the current [[Simulation]]
    */
-  def log(to: LogDestination, es: EventStream[_])(implicit sim: Simulation) { 
-    logrules ::= new LogRule(to, sim, es) 
+  def log[T](to: LogDestination, es: EventStream[T])(implicit sim: Simulation, m: Manifest[T]) {
+    // pass an EventStream[List[_]] directly, otherwise map it to one-element List
+    if(m <:< manifest[List[_]]) // manifests against type erasure
+      logrules ::= new LogRule(to, sim, es.asInstanceOf[EventStream[List[_]]]) 
+    else
+      logrules ::= new LogRule(to, sim, es.map(e => List(e)))
   }
 
   /**
@@ -246,7 +250,7 @@ case class LogWindow(name: String, columns: List[String] = List("Value"), timeCo
  * @param sim the current [[Simulation]]
  * @param es an [[EventStream]] which values are logged
  */
-class LogRule(val dest: LogDestination, val sim: Simulation, val es: EventStream[_]) extends Rule {
+class LogRule(val dest: LogDestination, val sim: Simulation, val es: EventStream[List[_]]) extends Rule {
   /**
    * Alternate constructor to log one or more signals.
    * @param dest the [[LogDestination]] to log to
@@ -262,10 +266,7 @@ class LogRule(val dest: LogDestination, val sim: Simulation, val es: EventStream
   )
 
   // call dest.log for every change with a list of current values (as long as dest is active)
-  for(e <- es.takeWhile(_ => dest.active)) dest.log(new RichSimulation(sim).time, e match {
-    case list: List[_] => list
-    case event: Any => List(event) // turn single value into list
-  })
+  for(e <- es.takeWhile(_ => dest.active)) dest.log(new RichSimulation(sim).time, e)
 }
 
 } // package rules
