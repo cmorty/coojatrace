@@ -176,7 +176,9 @@ case class LogFile(file: String, columns: List[String] = List("Value"), timeColu
  * A [[LogDestination]] which writes into a table in a new window.
  *
  * @param name title of window to be created
- * @param valueNames (optional) header names for value columns
+ * @param columns (optional) column name list (sets column count), default: "Value"
+ * @param timeColumn (optional) column name for simulation time. When set to `null`, time column
+ *   will not be logged, default: "Time"
  * @param sim the current [[Simulation]]
  */
 case class LogWindow(name: String, columns: List[String] = List("Value"), timeColumn: String = "Time")(implicit sim: Simulation) extends LogDestination {
