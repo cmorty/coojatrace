@@ -31,35 +31,41 @@ object Conversions {
 /**
  * Rich wrapper for a [[Simulation]].
  */
-class RichSimulation(val sim: Simulation) {
+class RichSimulation(val simulation: Simulation) extends RichObservable {
   /**
    * Get all motes in the simulation in a map with their ID as keys.
    * @return map with (id -> mote) elements
    */
-  def motes = sim.getMotes().map(m => m.getID() -> m).toMap
+  def motes = simulation.getMotes().map(m => m.getID() -> m).toMap
 
   /**
-   * Get current simulation time.
-   * @return current simulation time in microseconds
-   */ 
-  def time = sim.getSimulationTime
-
-  /**
-   * Get the simulations' radiomedium.
+   * Simulation radiomedium.
    * @return [[RadioMedium]] of this simulation
    */
-  def radioMedium = sim.getRadioMedium
+  def radioMedium = simulation.getRadioMedium
 
   /**
-   * Get the simulation mote relations.
+   * Simulation mote relations.
    */
-  lazy val moteRelations = new RichMoteRelations(sim).relations
-
+  lazy val moteRelations = new RichMoteRelations(simulation).relations
 
   /**
-   * Get simulation log.
+   * Simulation log.
    */
-  lazy val log = new RichLog(sim).messages
+  lazy val log = new RichLog(simulation).messages
+
+  /**
+   * Current simulation time.
+   * @return current simulation time in microseconds
+   */ 
+  def time = simulation.getSimulationTime
+
+  /**
+   * Current simulation time (in milliseconds) signal.
+   */
+  lazy val milliSeconds: Signal[Long] = observedSignal { time / 1000 }
+  protected def addObserver(o: Observer) { simulation.addMillisecondObserver(o) }
+  protected def removeObserver(o: Observer) { simulation.deleteMillisecondObserver(o) }
 }
 
 
