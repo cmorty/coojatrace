@@ -176,7 +176,8 @@ class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace"
       import wrappers._
       import interfacewrappers._
       import magicsignals._
-      import rules._
+      import rules.assertions._
+      import rules.logrules._
       import operators._
     """)
     
@@ -270,9 +271,6 @@ class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace"
 
     // clear mote conversion cache
     RichMote.clearCache()
-
-    // clear all active rules
-    rules.reset()
 
     // reset interpreter (clears all defined objects)
     if(interpreter != null) interpreter.reset() // necessary?

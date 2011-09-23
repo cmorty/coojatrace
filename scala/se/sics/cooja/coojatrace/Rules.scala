@@ -14,24 +14,28 @@ import se.sics.cooja._
 
 
 
-/**
- * Package for rules, which are (output) sinks for events and signals.
- */
-package object rules {
-  /**
-   * List of all active [[Assertion]]s.
-   */
-  private var assertions = List[Assertion]()
+package rules {
 
+
+
+package object assertions {
   /**
    * Create new assertion from (boolean) [[Signal]].
    * Assertion is raised when signal changes to `false`.
-   * @param sig [[Signal]]`[Boolean]` to check
+   * @param cond [[Signal]]`[Boolean]` to check
    * @param name name of assertion. Will be printed when raised
    * @param sim the current [[Simulation]]
    */
-  def assert(sig: Signal[Boolean], name: String)(implicit sim: Simulation) { 
-    assertions ::= new Assertion(sig, name, sim)
+  def assert(cond: Signal[Boolean], name: String)(implicit sim: Simulation, obs: Observing) { 
+    // only check on actual changes
+    for(c <- cond.distinct) {
+      // assertion violated
+      if(c == false) {
+        // error and stop (TODO: use logger?)
+        println("ASSERT: " + (if(name != null) name else cond) + " is " + c)
+        sim.stopSimulation() 
+      }
+    }
   }
 
   /**
@@ -41,18 +45,16 @@ package object rules {
    * @param name name of assertion. Will be printed when raised
    * @param sim the current [[Simulation]]
    */
-  def assert(es: EventStream[Boolean], name: String)(implicit sim: Simulation) { 
+  def assert(es: EventStream[Boolean], name: String)(implicit sim: Simulation, obs: Observing) { 
     // convert stream to signal and call assert for signals
-    assert(es.hold(true), name)(sim)
+    assert(es.hold(true), name)
   }
-  
+}
 
 
-  /**
-   * List of all active [[LogRule]]s.
-   */
-  private var logrules = List[LogRule]()
 
+
+package object logrules {
   /**
    * Create new rule to log one or more signals.
    * @param to [[LogDestination]]-object where values shall be logged to
@@ -60,8 +62,15 @@ package object rules {
    * of the signals will generate a new log-line listing ´´´all´´´ current values
    * @param sim the current [[Simulation]]
    */
-  def log(to: LogDestination, sig: Signal[_]*)(implicit sim: Simulation) { 
-    logrules ::= new LogRule(to, sim, sig.toList) 
+  def log(to: LogDestination, sig: Signal[_]*)(implicit sim: Simulation, obs: Observing) { 
+    val values = sig.toList
+    val stream = values.tail.foldLeft(values.head) {
+      case (combined, signal) => signal.flatMap(s => combined)
+    }.map {
+      x => values.map(_.now.toString)
+    }.change
+
+    log(to, stream)
   }
 
   /**
@@ -74,13 +83,15 @@ package object rules {
    * @param sim the current [[Simulation]]
    * @tparan T type of event stream to log
    */
-  def log[T](to: LogDestination, es: EventStream[T], sig: Signal[_]*)(implicit sim: Simulation, m: Manifest[T]) {
+  def log[T](to: LogDestination, es: EventStream[T], sig: Signal[_]*)(implicit sim: Simulation, m: Manifest[T], obs: Observing) {
     // pass an EventStream[List[_]] directly, otherwise map it to one-element List
     val stream = if(m <:< manifest[List[_]]) // manifests against type erasure
       es.asInstanceOf[EventStream[List[_]]].map(_ ::: sig.toList.map(_.now))
     else
       es.map(_ :: sig.toList.map(_.now))
-    logrules ::= new LogRule(to, sim, stream)
+    
+    // call dest.log for every change with a list of current values (as long as dest is active)
+    for(e <- stream.takeWhile(_ => to.active)) to.log(sim.getSimulationTime, e)
   }  
 
   /**
@@ -98,42 +109,10 @@ package object rules {
         }
       }
     }
-
-
-  /**
-   * Resets all active rules.
-   */
-  def reset() {
-    assertions = Nil
-    logrules = Nil
-  }
 }
 
-package rules {
 
-/**
- * Represents a rule for testing.
- */
-trait Rule extends Observing
-
-
-
-/**
- * A rule that stops simulation and outputs value and name when input signal
- * changes to `false`.
- */ 
-class Assertion(val cond: Signal[Boolean], val name: String, val sim: Simulation) extends Rule {
-  // only check on actual changes
-  for(c <- cond.distinct) {
-    // assertion violated
-    if(c == false) {
-      // error and stop (TODO: use logger?)
-      println("ASSERT: " + (if(name != null) name else cond) + " is " + c)
-      sim.stopSimulation() 
-    }
-  }
-}
-
+package logrules {
 
 /**
  * A generatic destination for log values.
@@ -181,12 +160,12 @@ case class LogFile(file: String, columns: List[String] = List("Value"), timeColu
     active = false
   }
 
-  // add observer to [[Simulation]] which flushes log buffers when sim is stopped
+  // add observer to Simulation which flushes log buffers when sim is stopped
   sim.addObserver(new Observer() {
     def update(obs: Observable, obj: Object) {
       if(!sim.isRunning) stream.flush()
     }
-    })
+  })
 
   // print header if enabled
   if(header == true) stream println allColumns.mkString(sep)
@@ -266,29 +245,6 @@ case class LogWindow(name: String, columns: List[String] = List("Value"), timeCo
   def active = !window.isClosed
 }
 
-/**
- * A rule that logs an eventstream or signals to a [[LogDestination]].
- * @param dest the [[LogDestination]] to log to
- * @param sim the current [[Simulation]]
- * @param es an [[EventStream]] which values are logged
- */
-class LogRule(val dest: LogDestination, val sim: Simulation, val es: EventStream[List[_]]) extends Rule {
-  /**
-   * Alternate constructor to log one or more signals.
-   * @param dest the [[LogDestination]] to log to
-   * @param sim the current [[Simulation]]
-   * @param values one or more [[Signal]]s which changes are logged
-   */
-  def this(dest: LogDestination, sim: Simulation, values: List[Signal[_]]) = this(
-    dest, sim, values.tail.foldLeft(values.head) {
-      case (combined, signal) => signal.flatMap(s => combined)
-    }.map {
-      x => values.map(_.now.toString)
-    }.change
-  )
-
-  // call dest.log for every change with a list of current values (as long as dest is active)
-  for(e <- es.takeWhile(_ => dest.active)) dest.log(new RichSimulation(sim).time, e)
-}
+} // package logrules
 
 } // package rules
