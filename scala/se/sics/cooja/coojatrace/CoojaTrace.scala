@@ -33,7 +33,7 @@ import mspwrappers._
  */
 @ClassDescription("CoojaTrace")
 @PluginType(PluginType.SIM_PLUGIN) // comment out this line to prevent scaladoc bug
-class CoojaTracePlugin(sim: Simulation, gui: GUI) extends VisPlugin("CoojaTrace", gui, false) {
+class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("CoojaTrace", gui, false) {
   /**
    * Logger for our plugin.
    */
