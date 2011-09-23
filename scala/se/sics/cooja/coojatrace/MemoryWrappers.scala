@@ -45,7 +45,7 @@ trait MemVarType[+T] {
 /**
  * Type for integer (int) variables.
  */
-object IntVarType extends MemVarType[Int] {
+object CInt extends MemVarType[Int] {
   val name = "int"
   def size(mem: RichMoteMemory) = mem.memory.getIntegerLength
   def get(addr: Int, mem: RichMoteMemory) = {
@@ -59,7 +59,7 @@ object IntVarType extends MemVarType[Int] {
 /**
  * Type for pointer (*void) variables.
  */
-object PointerVarType extends MemVarType[Int] {
+object CPointer extends MemVarType[Int] {
   val name = "*void"
   def size(mem: RichMoteMemory) = mem.memory.getIntegerLength
   def get(addr: Int, mem: RichMoteMemory) = {
@@ -72,7 +72,7 @@ object PointerVarType extends MemVarType[Int] {
 /**
  * Type for byte (char) variables.
  */
-object ByteVarType extends MemVarType[Byte] {
+object CByte extends MemVarType[Byte] {
   val name = "char"
   def size(mem: RichMoteMemory) = 1
   def get(addr: Int, mem: RichMoteMemory) = {
@@ -82,15 +82,6 @@ object ByteVarType extends MemVarType[Byte] {
   }
 }
 
-
-/**
- * Aliases for memory variable types to their C names.
- * Can be used after importing: `import CTypeNames._`
- */
-object CTypeNames {
-  val int = IntVarType
-  val char = ByteVarType
-}
 
 
 /*
@@ -263,9 +254,9 @@ trait RichMoteMemory {
       logger.warn("DID NOT FIND MemVar(Val(" + addr + ", " + typ + " IN: ")
       for(m @ MemVar(addr, typ, mem) <- variables.keys) logger.warn("-" + m + " (" + addr + ", "+ typ+")")
       val s = typ match { // DEBUG: other way round... addVar(addr, typ)
-        case it: IntVarType.type => addIntVar(addr)
-        case bt: ByteVarType.type => addByteVar(addr)
-        case pt: PointerVarType.type => addPointerVar(addr)
+        case it: CInt.type => addIntVar(addr)
+        case bt: CByte.type => addByteVar(addr)
+        case pt: CPointer.type => addPointerVar(addr)
       }
       var v = new MemVar(Val(addr), typ, this) {
         override lazy val varSig: Signal[T] = s.asInstanceOf[Signal[T]]
@@ -295,10 +286,10 @@ trait RichMoteMemory {
   def variable[T](name: String, typ: MemVarType[T]): MemVar[T] =
     variable[T](memory.getVariableAddress(name), typ)
 
-  def intVar(name: String) = variable(name, IntVarType)
-  def intVar(addr: Int) = variable(addr, IntVarType)
-  def byteVar(name: String) = variable(name, ByteVarType)
-  def byteVar(addr: Int) = variable(addr, ByteVarType)
+  def intVar(name: String) = variable(name, CInt)
+  def intVar(addr: Int) = variable(addr, CInt)
+  def byteVar(name: String) = variable(name, CByte)
+  def byteVar(addr: Int) = variable(addr, CByte)
 
 
   /**
