@@ -137,7 +137,9 @@ class RichMote(val mote: Mote) extends InterfaceAccessors {
    * @return [[Signal]] of currently running [[Process]]
    */
   lazy val currentProcess = {
-    memory.intVar("process_current").map(addr => Process(mote.memory.varAddresses(addr), addr))
+    memory.variable("process_current", CPointer).map(
+      addr => Process(mote.memory.varAddresses.getOrElse(addr, "") ,addr)
+    )
   }
 }
 
