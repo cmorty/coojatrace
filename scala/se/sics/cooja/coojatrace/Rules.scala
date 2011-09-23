@@ -84,6 +84,23 @@ package object rules {
   }  
 
   /**
+   * Implicit CanForward to a LogDestination. Can be used to log to a destination using
+   * `destination <<: signalOrStream`.
+   * @tparam T type of signal/stream
+   * @return CanForward to LogDestination for type T
+   */
+  implicit def forwardLog[T](implicit sim: Simulation, m: Manifest[T]) =
+    new CanForward[LogDestination, T] {
+      def forward(s: Forwardable[T], dest: => LogDestination)(implicit o: Observing) {
+        s match { // match because of overloaded log(...)
+          case sig: Signal[_] => log(dest, sig)
+          case es: EventStream[_] => log(dest, es.asInstanceOf[EventStream[T]])
+        }
+      }
+    }
+
+
+  /**
    * Resets all active rules.
    */
   def reset() {
