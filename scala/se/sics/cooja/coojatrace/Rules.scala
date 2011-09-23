@@ -63,11 +63,11 @@ package object logrules {
    * @param sim the current [[Simulation]]
    */
   def log(to: LogDestination, sig: Signal[_]*)(implicit sim: Simulation, obs: Observing) { 
-    val values = sig.toList
-    val stream = values.tail.foldLeft(values.head) {
-      case (combined, signal) => signal.flatMap(s => combined)
-    }.map {
-      x => values.map(_.now.toString)
+    require(sig.size > 0)
+    
+    val signals = sig.reverse
+    val stream = signals.tail.foldLeft(signals.head.map(v => List(v.toString))) {
+      case (combined, signal) => signal.flatMap(s => combined.map(v => s.toString :: v))
     }.change
 
     log(to, stream)
