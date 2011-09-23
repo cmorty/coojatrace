@@ -21,7 +21,7 @@
 
   <target name="compile" depends="init">
     <mkdir dir="build"/>
-    <scalac srcdir="scala" destdir="build" deprecation="yes">
+    <scalac srcdir="scala" destdir="build" deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${cooja}/dist/cooja.jar"/>
       	<pathelement location="${cooja}/lib/jdom.jar"/>
