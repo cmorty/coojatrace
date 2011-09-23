@@ -207,6 +207,10 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
     Integer.reverseBytes(retVal) >> 16
   }
 
+  // TODO: DOC
+  override def array(addr: Int, length: Int) =
+    memory.getMemorySegment(addr, length)
+
 
   def addIntVar(addr: Int) = memVar(addr, int, _.toInt)
   def addByteVar(addr: Int) = memVar(addr, byte, _.toByte)
@@ -215,9 +219,8 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
   def addPointerVar(addr: Int) = memVar(addr, pointer, _.toInt)
 
 
-  /*def addArrayVar(name: String, length: Int) =
-    memVar(name, memory.getByteArray(_: String, length))
-  }*/
+  def addArrayVar(addr: Int, length: Int) =
+    memVar(addr, array(_: Int, length), _ => array(addr, length))
 }
 
 } // package mspwrappers

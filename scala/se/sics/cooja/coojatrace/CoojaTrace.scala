@@ -176,6 +176,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
       import wrappers._
       import interfacewrappers._
       import magicsignals._
+      import memorywrappers._
       import rules.assertions._
       import rules.logrules._
       import operators._

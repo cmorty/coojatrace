@@ -145,8 +145,8 @@ class ContikiMoteRichMemory(val mote: ContikiMote) extends RichMoteMemory {
 
   // TODO
   def addPointerVar(addr: Int) = memoryInterface.addVar(addr, pointer)
-  //def addArrayVar(name: String, length: Int) =
-  //  memoryInterface.addVar(name, memory.getByteArray(_, length))
+  def addArrayVar(addr: Int, length: Int) =
+    memoryInterface.addVar(addr, array(_, length))
 }
 
 } // package contikiwrappers
