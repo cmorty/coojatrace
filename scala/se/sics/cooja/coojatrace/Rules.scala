@@ -25,6 +25,7 @@ package object assertions {
    * @param cond [[Signal]]`[Boolean]` to check
    * @param name name of assertion. Will be printed when raised
    * @param sim the current [[Simulation]]
+   * @param obs the observing context implicit
    */
   def assert(cond: Signal[Boolean], name: String)(implicit sim: Simulation, obs: Observing) { 
     // only check on actual changes
@@ -44,6 +45,7 @@ package object assertions {
    * @param es [[EventStream]]`[Boolean]` to check
    * @param name name of assertion. Will be printed when raised
    * @param sim the current [[Simulation]]
+   * @param obs the observing context implicit
    */
   def assert(es: EventStream[Boolean], name: String)(implicit sim: Simulation, obs: Observing) { 
     // convert stream to signal and call assert for signals
@@ -61,16 +63,18 @@ package object logrules {
    * @param sig [[Signal]]s to be logged. If multiple signals are given, a change in any 
    * of the signals will generate a new log-line listing ´´´all´´´ current values
    * @param sim the current [[Simulation]]
+   * @param obs the observing context implicit
    */
   def log(to: LogDestination, sig: Signal[_]*)(implicit sim: Simulation, obs: Observing) { 
     require(sig.size > 0)
-    
+
     val signals = sig.reverse
     val stream = signals.tail.foldLeft(signals.head.map(v => List(v.toString))) {
       case (combined, signal) => signal.flatMap(s => combined.map(v => s.toString :: v))
     }.change
 
-    log(to, stream)
+    // call dest.log for every change with a list of current values (as long as to is active)
+    stream.takeWhile(_ => to.active).foreach(to.log)
   }
 
   /**
@@ -81,6 +85,7 @@ package object logrules {
    * @param sig (optional) [[Signal]]s which will be sampled at every new event from es. Signal
    *   values will '''not''' be logged as they change, but '''only''' when es fires!
    * @param sim the current [[Simulation]]
+   * @param obs the observing context implicit
    * @tparan T type of event stream to log
    */
   def log[T](to: LogDestination, es: EventStream[T], sig: Signal[_]*)(implicit sim: Simulation, m: Manifest[T], obs: Observing) {
@@ -90,8 +95,8 @@ package object logrules {
     else
       es.map(_ :: sig.toList.map(_.now))
     
-    // call dest.log for every change with a list of current values (as long as dest is active)
-    for(e <- stream.takeWhile(_ => to.active)) to.log(sim.getSimulationTime, e)
+    // call dest.log for every change with a list of current values (as long as to is active)
+    stream.takeWhile(_ => to.active).foreach(to.log)
   }  
 
   /**
@@ -119,11 +124,10 @@ package logrules {
  */
 trait LogDestination {
   /**
-   * Log a timestamped list of values.
-   * @param time simulated time in microseconds
+   * Log a list of values.
    * @param values list of values to be logged
    */
-  def log(time: Long, values: List[_]): Unit
+  def log(values: List[_]): Unit
 
   /**
    * Get status of log destination. `false` means it is no longer available
@@ -170,9 +174,9 @@ case class LogFile(file: String, columns: List[String] = List("Value"), timeColu
   // print header if enabled
   if(header == true) stream println allColumns.mkString(sep)
 
-  def log(time: Long, values: List[_]) {
+  def log(values: List[_]) {
     // join values (and time if enabled) with seperator and print 
-    val out = if(timeColumn != null) (time :: values) else values
+    val out = if(timeColumn != null) (sim.getSimulationTime :: values) else values
     stream println out.mkString(sep)
   }
 }
@@ -224,7 +228,7 @@ case class LogWindow(name: String, columns: List[String] = List("Value"), timeCo
     window.dispose()
   }
 
-  def log(time: Long, values: List[_]) {
+  def log(values: List[_]) {
     // check for right number of columns
     require(values.size == columns.size, "incorrect column count")
 
@@ -232,7 +236,7 @@ case class LogWindow(name: String, columns: List[String] = List("Value"), timeCo
     val v = new java.util.Vector[Object](values.length + 1)
 
     // add timestamp in milliseconds if enabled
-    if(timeColumn != null) v.addElement((time/1000.0).asInstanceOf[AnyRef])
+    if(timeColumn != null) v.addElement((sim.getSimulationTime/1000.0).asInstanceOf[AnyRef])
 
     // add value columns
     for(x <- values) v.addElement(x.asInstanceOf[AnyRef])
