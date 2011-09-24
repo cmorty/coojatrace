@@ -18,6 +18,7 @@ package object operators extends
   operators.MaximumOperator with
   operators.MinimumOperator with
   operators.DeltaOperator with
+  operators.ZipOperator with
   operators.WithTimeOperator with
   operators.WithPositionOperator with
   operators.WindowOperator
@@ -144,6 +145,27 @@ trait DeltaOperator {
     es.foldLeft((0L, 0L)) {
       case ( (last, _), curr ) => (curr, curr - last)
     }.map(_._2)
+  }
+}
+
+/**
+ * Zip operator.
+ */
+trait ZipOperator {
+  /**
+   * Turns all given signals into a signal of a list of their values.
+   * Order of values in list signal matches argument ordering.
+   * A change in '''any''' of the source signals will change the list signal.
+   * @param signals one or more [[Signal]]s to turn into list signal
+   * @return [[Signal]] of list of input signal values
+   * @tparam T type of input signals and output signal list
+   */
+  def zip[T](signals: Signal[T]*) = {
+    require(signals.size > 0)
+    val sigs = signals.reverse
+    sigs.tail.foldLeft(sigs.head.map(v => List[T](v))) {
+      case (combined, signal) => signal.flatMap(s => combined.map(v => s :: v))
+    }
   }
 }
 
