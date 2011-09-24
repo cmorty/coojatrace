@@ -191,7 +191,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
         contikiwrappers.register()
       """)
     } catch {
-      case e: Exception => logger.info("ContikiMote wrappers not loaded.")
+      case e: Exception => logger.warn("ContikiMote wrappers not loaded.")
     }
 
     // load and register mspmote wrappers if available
@@ -203,7 +203,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
         mspwrappers.register()
       """)
     } catch {
-      case e: Exception => logger.info("MspMote wrappers not loaded.")
+      case e: Exception => logger.warn("MspMote wrappers not loaded.")
     }
 
     // make the simulation object available to test code
@@ -223,33 +223,37 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     
     // interpret test script
     val res = interpreter.interpret(scriptCode.getText())
-    logger.debug("Interpreting script: " + res)
 
     if(res == scala.tools.nsc.InterpreterResults.Success) {
       // success, change status
+      logger.info("Script active")
       scriptButton.setText("Reset")
       active = true
     }
     else if(res == scala.tools.nsc.InterpreterResults.Incomplete) {
       // incomplete, show warning dialog
-      JOptionPane.showMessageDialog(GUI.getTopParentContainer,
-            "The test script is incomplete.\n\n" +
-            "This is most likely caused by an unmatched open (, [ or \"",
-            "Script incomplete", JOptionPane.WARNING_MESSAGE)
+      logger.error("Script incomplete!")
+
+      if(GUI.isVisualized) JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+        "The test script is incomplete.\n\n" +
+        "This is most likely caused by an unmatched open (, [ or \"",
+        "Script incomplete", JOptionPane.WARNING_MESSAGE)
     }
     else {
       // error, show error dialog
       pwriter.flush()
       val msg = errorWriter.toString
-      val e = new Exception("Scala compilation error") {
-        override def printStackTrace(stream: PrintStream) {
-          stream.print(msg)
+
+      logger.error("Script error: " + msg)
+      if(GUI.isVisualized) {
+        val e = new Exception("Scala compilation error") {
+          override def printStackTrace(stream: PrintStream) {
+            stream.print(msg)
+          }
         }
-      }
-      if(GUI.showErrorDialog(this, "Scala compilation error", e, true)) 
-        activate()
-      else
+        GUI.showErrorDialog(this, "Scala compilation error", e, false)
         deactivate()
+      }
     }
   }
 
