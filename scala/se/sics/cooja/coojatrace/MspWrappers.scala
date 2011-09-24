@@ -181,6 +181,11 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
         v.update(convFun(data))
       }
     })
+
+    // remove breakpoint on plugin deactivation
+    CoojaTracePlugin.forSim(mote.getSimulation).onCleanUp {
+      mote.getCPU.setBreakPoint(addr, null)
+    }
     
     // return signal
     v
