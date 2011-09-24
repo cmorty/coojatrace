@@ -186,39 +186,21 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
     v
   }
 
-  /**
-   * Get value of byte variable at address.
-   *
-   * @param addr address of variable
-   * @return byte value of variable
-   */
-  override def byte(addr: Int) =
-    memory.getMemorySegment(addr, 1)(0)
 
-  /**
-   * Get value of integer variable at address.
-   *
-   * @param addr address of variable
-   * @return integer value of variable
-   */
+  override def byte(addr: Int) = memory.getMemorySegment(addr, 1)(0)
+
   override def int(addr: Int) = {
     val bytes = memory.getMemorySegment(addr, 4).map(_ & 0xFF)
     val retVal = (bytes(0) << 8) + bytes(1)
     Integer.reverseBytes(retVal) >> 16
   }
 
-  // TODO: DOC
-  override def array(addr: Int, length: Int) =
-    memory.getMemorySegment(addr, length)
+  override def array(addr: Int, length: Int) = memory.getMemorySegment(addr, length)
 
 
   def addIntVar(addr: Int) = memVar(addr, int, _.toInt)
   def addByteVar(addr: Int) = memVar(addr, byte, _.toByte)
-
-  // TODO
   def addPointerVar(addr: Int) = memVar(addr, pointer, _.toInt)
-
-
   def addArrayVar(addr: Int, length: Int) =
     memVar(addr, array(_: Int, length), _ => array(addr, length))
 }

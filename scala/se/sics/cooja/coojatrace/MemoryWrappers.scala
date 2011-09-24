@@ -13,7 +13,10 @@ import se.sics.cooja.coojatrace.wrappers._
 
 
 
-package object memorywrappers extends memorywrappers.COperators
+/**
+ * Wrappers for accessing mote memory variables.
+ */
+package object memorywrappers extends memorywrappers.COperators // import C-style operators
 
 
 
@@ -54,25 +57,16 @@ trait MemVarType[+T] {
 object CInt extends MemVarType[Int] {
   val name = "int"
   def size(mem: RichMoteMemory) = mem.memory.getIntegerLength
-  def get(addr: Int, mem: RichMoteMemory) = {
-    val logger = org.apache.log4j.Logger.getLogger(this.getClass) // DEBUG
-    logger.debug("^^ getting int @ "+ addr) // DEBUG
-    mem.addVariable(addr, this)
-  }
+  def get(addr: Int, mem: RichMoteMemory): Signal[Int] = mem.addVariable(addr, this, mem.addIntVar)
 }
 
-// TODO
 /**
  * Type for pointer (*void) variables.
  */
 object CPointer extends MemVarType[Int] {
   val name = "*void"
   def size(mem: RichMoteMemory) = mem.memory.getIntegerLength
-  def get(addr: Int, mem: RichMoteMemory) = {
-    val logger = org.apache.log4j.Logger.getLogger(this.getClass) // DEBUG
-    logger.debug("^^ getting ptr @ "+ addr) // DEBUG
-    mem.addVariable(addr, this)
-  }
+  def get(addr: Int, mem: RichMoteMemory): Signal[Int] = mem.addVariable(addr, this, mem.addPointerVar)
 }
 
 /**
@@ -81,32 +75,21 @@ object CPointer extends MemVarType[Int] {
 object CByte extends MemVarType[Byte] {
   val name = "char"
   def size(mem: RichMoteMemory) = 1
-  def get(addr: Int, mem: RichMoteMemory) = {
-    val logger = org.apache.log4j.Logger.getLogger(this.getClass) // DEBUG
-    logger.debug("^^ getting byte @ "+ addr) // DEBUG
-    mem.addVariable(addr, this)
-  }
+  def get(addr: Int, mem: RichMoteMemory): Signal[Byte] = mem.addVariable(addr, this, mem.addByteVar)
 }
 
-
+/**
+ * Type for (byte) array variables.
+ * 
+ * @param length size of array in bytes
+ */
 case class CArray(length: Int) extends MemVarType[Array[Byte]] {
   val name = "char["+ length + "]"
   def size(mem: RichMoteMemory) = length
-  def get(addr: Int, mem: RichMoteMemory) = {
-    val logger = org.apache.log4j.Logger.getLogger(this.getClass) // DEBUG
-    logger.debug("^^ getting array @ "+ addr) // DEBUG
-    mem.addVariable(addr, this)
-  }
+  def get(addr: Int, mem: RichMoteMemory): Signal[Array[Byte]] =
+   mem.addVariable(addr, this, a => mem.addArrayVar(a, length))
 }
 
-
-
-/*
-case class MemSignal[+T](addr: Int, sig: Signal[T]) extends Signal[T] {
-  def now = sig.now
-  lazy val change = sig.change
-}
-*/
 
 
 /**
@@ -128,15 +111,14 @@ case class MemVar[+T](addr: Signal[Int], typ: MemVarType[T], mem: RichMoteMemory
   def now = varSig.now
   lazy val change = varSig.change
 
-  val logger = org.apache.log4j.Logger.getLogger(this.getClass) // DEBUG
-  logger.debug("+++ created new MemVar: " + this) //DEBUG
-
-  // TODO: DOC
-  def toPointer[N](newTyp: MemVarType[N])(implicit evidence: T <:< Int): MemPointer[N] = {
-   logger.debug(">>> creating pointer from " + this) // DEBUG
+  /**
+   * Convert (cast) this variable to a pointer of given type. This works for int variables only!
+   * @param newTyp type of new pointer (type of target of pointer)
+   * @return new [[MemPointer]] which points at address given by value of this variable
+   * @tparam N scala type of pointer type
+   */
+  def toPointer[N](newTyp: MemVarType[N])(implicit evidence: T <:< Int): MemPointer[N] =
     MemPointer[N](varSig.asInstanceOf[Signal[Int]], newTyp, mem)
-  }
-   
 
   // useful output
   override def toString = super.toString + " (" + typ.name + " @ " + addr.now + " = " + now + ")"
@@ -158,14 +140,13 @@ case class MemPointer[+T](addr: Signal[Int], typ: MemVarType[T], mem: RichMoteMe
   def now = addr.now
   lazy val change = addr.change
 
-  val logger = org.apache.log4j.Logger.getLogger(this.getClass) // DEBUG
-  logger.debug("+++ created new MemPointer: " + this) //DEBUG
-
-  // TODO: DOC
-  def dereference[N](t: MemVarType[N]): MemVar[N] = {
-    logger.debug("<<< dereferencing " + this)// DEBUG
-    MemVar[N](addr, t, mem)
-  }
+  /**
+   * Dereferences a pointer and returns result variable.
+   * @param t type of target variable
+   * @return [[MemVar]] at address given by the value of this pointer
+   * @tparam scala type of target variable
+   */
+  def dereference[N](t: MemVarType[N]): MemVar[N] = MemVar[N](addr, t, mem)
 
   /**
    * Add offset to pointer (C pointer arithmetic).
@@ -214,13 +195,25 @@ trait COperators {
    */
   def *[T](p: MemPointer[T]): MemVar[T] = *(p, p.typ)
 
-  // NEW AND DANGEROUS
+  /**
+   * Convenience function for casting a variable into a pointer.
+   * @param v [[MemVar]][Int] containing an address
+   * @param typ type of pointer (= type of pointer target variable)
+   * @return [[MemPointer]] pointing at address given by value of v
+   * @tparam T scala type of pointer
+   */
   def ptr[T](v: MemVar[Int], typ: MemVarType[T]): MemPointer[T] = v.toPointer[T](typ)
 }
 
 
 
-// TODO: DOC
+/**
+ * (Byte) Array in mote memory. Can be used as a signal.
+ *
+ * @param addr [[Signal]] for start address of this array.
+ * @param len length of array in bytes
+ * @param mem mote memory in which array is found
+ */
 case class MemArray(addr: Signal[Int], len: Int, mem: RichMoteMemory) extends Signal[Array[Byte]] {
   val typ = CArray(len)
   /**
@@ -228,12 +221,15 @@ case class MemArray(addr: Signal[Int], len: Int, mem: RichMoteMemory) extends Si
    */
   lazy val arrSig: Signal[Array[Byte]] = addr.distinct.flatMap(a => typ.get(a, mem))
 
-
   // behave like current array signal
   def now = arrSig.now
   lazy val change = arrSig.change
   
-  // TODO: DOC
+  /**
+   * Return element at index.
+   * @param idx index in array
+   * @return [[MemVar]] of element in array
+   */
   def apply(idx: Int) = MemVar(addr.map(_ + idx), typ, mem)
 
   // useful output
@@ -250,8 +246,6 @@ trait RichMoteMemory {
    */
   def memory: AddressMemory
 
-  val logger = org.apache.log4j.Logger.getLogger(this.getClass)  // DEBUG
-
   /**
    * Get mote variable names and addresses.
    * @return map of (address -> variablename) elements
@@ -262,73 +256,87 @@ trait RichMoteMemory {
     }.toMap
   }
 
+  /**
+   * List of already created [[MemVar]]s. Implemented a WeakHashMap with the variables as (weak) keys
+   * pointing at nothing, since WeakHashMap handles all WeakReferences for us (there is no WeakList or similar).
+   */
   protected val variables = collection.mutable.WeakHashMap[MemVar[_], Null]()
 
-  protected[memorywrappers] def addVariable[T](addr: Int, typ: MemVarType[T]): Signal[T] =
+  /**
+   * Get a new [[Signal]] for a memory variable (create and cache if not found)
+   * @param addr address in memory where variable is found
+   * @param typ type of variable
+   * @param addFun function which takes address and returns newly created signal
+   * @return [[Signal]] with value of variable
+   * @tparam scala type of variable   
+   */
+  protected[memorywrappers] def addVariable[T](address: Int, typ: MemVarType[T], addFun: Int => Signal[T]): MemVar[T] =
+    // check "cache" if signal is alredy created (as a MemVar)
     variables.keys.find { 
-      k => (k.addr == Val(addr)) && (k.typ == typ)
+      k => (k.typ == typ) && (k.addr == Val(address))
     }.getOrElse {
-      logger.warn("DID NOT FIND MemVar(Val(" + addr + ", " + typ + " IN: ")
-      for(m @ MemVar(addr, typ, mem) <- variables.keys) logger.warn("-" + m + " (" + addr + ", "+ typ+")")
-      val s = typ match { // DEBUG: other way round... addVar(addr, typ)
-        case it: CInt.type => addIntVar(addr)
-        case bt: CByte.type => addByteVar(addr)
-        case pt: CPointer.type => addPointerVar(addr)
-        case at: CArray => addArrayVar(addr, at.length)
+      // not found, create underlying signal by addFun
+      val sig = addFun(address).asInstanceOf[Signal[T]]
+      
+      // create new memvar 
+      var v = new MemVar(Val(address), typ, this) {
+        override lazy val varSig: Signal[T] = sig
       }
-      var v = new MemVar(Val(addr), typ, this) {
-        override lazy val varSig: Signal[T] = s.asInstanceOf[Signal[T]]
-      }
-      variables(v) = null
-      logger.debug("** addVar: " + variables) // DEBUG
-      v //s?
-    }.asInstanceOf[Signal[T]]
 
-  def variable[T](addr: Int, typ: MemVarType[T]): MemVar[T] = 
-    variables.keys.find { 
-      k => (k.addr == Val(addr)) && (k.typ == typ)
-    }.getOrElse {
-      val v = MemVar(Val(addr), typ, this)
+      // store in cache and return
       variables(v) = null
-      logger.debug("** variable: " + variables) // DEBUG
       v
     }.asInstanceOf[MemVar[T]]
 
+  
+  /**
+   * Get a memory variable of given type at address.
+   * @param addr address in memory where variable is found
+   * @param typ type of variable
+   * @return [[MemVar]] with value of variable
+   * @tparam scala type of variable
+   */
+  def variable[T](addr: Int, typ: MemVarType[T]): MemVar[T] = 
+    addVariable[T](addr, typ, a => typ.get(a, this))
 
   /**
-   * Get signal of memory variable.
+   * Get a memory variable of given type at address.
    * @param name name of variable
-   * @return [[Signal]] with value of variable
+   * @param typ type of variable
+   * @return [[MemVar]] with value of variable
    * @tparam scala type of variable
    */
   def variable[T](name: String, typ: MemVarType[T]): MemVar[T] =
     variable[T](memory.getVariableAddress(name), typ)
 
-  def intVar(name: String) = variable(name, CInt)
-  def intVar(addr: Int) = variable(addr, CInt)
-  def byteVar(name: String) = variable(name, CByte)
-  def byteVar(addr: Int) = variable(addr, CByte)
-
 
   /**
-   * Create signal of memory int variable.
+   * Create signal of a memory int variable.
    * @param addr address of int variable
    * @return [[Signal]] with value of int variable
    */
   protected[memorywrappers] def addIntVar(addr: Int): Signal[Int]
 
   /**
-   * Create signal of memory byte variable.
+   * Create signal of a memory byte variable.
    * @param addr address of byte variable
    * @return [[Signal]] with value of byte variable
    */
   protected[memorywrappers] def addByteVar(addr: Int): Signal[Byte]
 
-
-  // TODO
+  /**
+   * Create signal of a memory pointer.
+   * @param addr address of pointer
+   * @return [[Signal]] with value (target address) of pointer
+   */
   protected[memorywrappers] def addPointerVar(addr: Int): Signal[Int]
 
-  // TODO
+  /**
+   * Create signal of a memory array.
+   * @param addr address of array
+   * @param len length of array in bytes
+   * @return [[Signal]] with value of array
+   */
   protected[memorywrappers] def addArrayVar(addr: Int, len: Int): Signal[Array[Byte]]
 
 
@@ -368,13 +376,25 @@ trait RichMoteMemory {
     val bytes = memory.asInstanceOf[SectionMoteMemory].getMemorySegment(addr, 4).map(_ & 0xFF)
     val retVal = ((bytes(0) & 0xFF) << 24) + ((bytes(1) & 0xFF) << 16) +
                  ((bytes(2) & 0xFF) << 8) + (bytes(3) & 0xFF) // TODO: int length
-    val r= Integer.reverseBytes(retVal)
-    logger.debug("VV read int @ " + addr + " = " + r); r // DEBUG
+    Integer.reverseBytes(retVal)
   }
 
-  // TODO
-  def pointer(addr: Int) = int(addr)
+  /**
+   * Get value of pointer.
+   * @param name name of pointer
+   * @return integer value (target address) of pointer
+   */
   def pointer(name: String) = int(name)
+
+  /**
+   * Get value of pointer at address.
+   *
+   * '''Note:''' this works only for mote types using SectionMoteMemory, and will throw an
+   * exception otherwise. This method should therefore be overriden in other mote type wrappers.
+   * @param addr name of pointer
+   * @return integer value (target address) of pointer
+   */
+  def pointer(addr: Int) = int(addr)
 
   /**
    * Get byte array of specified length.
@@ -384,8 +404,14 @@ trait RichMoteMemory {
    */
   def array(name: String, length: Int) = memory.getByteArray(name, length)
 
-  // TODO: DOC
-  def array(addr: Int, length: Int) = memory.asInstanceOf[SectionMoteMemory].getMemorySegment(addr, length)
+  /**
+   * Get byte array of specified length at address.
+   * @param address address of array
+   * @param length length of array in bytes
+   * @return byte array from memory
+   */
+  def array(addr: Int, length: Int) =
+    memory.asInstanceOf[SectionMoteMemory].getMemorySegment(addr, length)
 }
 
 } // package memorywrappers

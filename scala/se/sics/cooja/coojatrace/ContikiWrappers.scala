@@ -50,11 +50,12 @@ class ContikiRichMote(mote: ContikiMote) extends RichMote(mote) {
  */
 @ClassDescription("Memory")
 class MemoryInterface(mote: Mote) extends MoteInterface with PolledAfterActiveTicks {
-  // TODO DOC
+  /**
+   * WeakHashMap to store update function for variable signals.
+   * Does not hold a strong reference to the signal and will remove update function
+   * from list when (key) signal is garbage collected.
+   */
   private val updates = collection.mutable.WeakHashMap[Var[_], () => Unit]()
-
-
-  val logger = org.apache.log4j.Logger.getLogger(this.getClass)  // DEBUG 
 
   /**
    * Create signal for contiki mote memory variable.
@@ -69,13 +70,13 @@ class MemoryInterface(mote: Mote) extends MoteInterface with PolledAfterActiveTi
     // create new signal, get inital value by evaluating updateFun
     val v = Var[T](updateFun(addr))
 
-    logger.debug("+++ ContikiMote: added var @ " + addr + " = " + v.now) // DEBUG
-
-    // TODO DOC
+    // store new signal in a weak reference to use in update function, otherwise
+    // update function would prevent garbage collecting of signal!
     val weak = new ref.WeakReference(v)
 
-    // TODO DOC
+    // WeakHashMap has synchronization issues with garbage collection...
     updates synchronized {
+      // store update function, which calls updateFun and updates signal
       updates(v) = { () => weak.get.map(_.update(updateFun(addr))) }
     }
 
@@ -90,9 +91,7 @@ class MemoryInterface(mote: Mote) extends MoteInterface with PolledAfterActiveTi
       setChanged()
       notifyObservers(this)
 
-      logger.debug("!! ContikiMote " + mote + " ticked: calling " + updates.size + " funs") // DEBUG
-
-      // TODO DOC
+      // after each tick, call every update function
       updates synchronized {
         for(fun <- updates.values.toSeq) fun()  
       }
@@ -134,19 +133,21 @@ class ContikiMoteRichMemory(val mote: ContikiMote) extends RichMoteMemory {
    */
   lazy val memoryInterface = MemoryInterface(mote)
 
+  /**
+   * Mote memory.
+   */
   lazy val memory = mote.getMemory.asInstanceOf[AddressMemory]
+
 
   def addIntVar(addr: Int) = memoryInterface.addVar(addr, int)
   def addByteVar(addr: Int) = memoryInterface.addVar(addr, byte)
+  def addPointerVar(addr: Int) = memoryInterface.addVar(addr, pointer)
+  def addArrayVar(addr: Int, length: Int) = memoryInterface.addVar(addr, array(_, length))
 
-  // TODO
+
+  // return original memory addresses by subtracting offset of reference value
   override def pointer(name: String) = int(name) - int("referenceVar")
   override def pointer(addr: Int) = int(addr) - int("referenceVar")
-
-  // TODO
-  def addPointerVar(addr: Int) = memoryInterface.addVar(addr, pointer)
-  def addArrayVar(addr: Int, length: Int) =
-    memoryInterface.addVar(addr, array(_, length))
 }
 
 } // package contikiwrappers
