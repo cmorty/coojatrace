@@ -39,6 +39,8 @@ package contikiwrappers {
  */
 class ContikiRichMote(mote: ContikiMote) extends RichMote(mote) {
   override lazy val memory = new ContikiMoteRichMemory(mote)
+
+  override lazy val currentProcessDynamic = throw new Exception("Unsupported for ContikiMotes as process name strings are stored in .text section not accessibke to cooja plugins.")
 }
 
 
@@ -88,13 +90,14 @@ class MemoryInterface(mote: Mote) extends MoteInterface with PolledAfterActiveTi
    * Call all update functions after an active tick to check for memory variable changes.
    */
   def doActionsAfterTick() {
-      setChanged()
-      notifyObservers(this)
+    setChanged()
+    notifyObservers(this)
 
-      // after each tick, call every update function
-      updates synchronized {
-        for(fun <- updates.values.toSeq) fun()  
-      }
+    // after each tick, call every update function
+    updates synchronized {
+      val functions = updates.values.toList
+      for(fun <- functions) fun() 
+    }
   }
 
   def getInterfaceVisualizer = null
@@ -146,8 +149,14 @@ class ContikiMoteRichMemory(val mote: ContikiMote) extends RichMoteMemory {
 
 
   // return original memory addresses by subtracting offset of reference value
-  override def pointer(name: String) = int(name) - int("referenceVar")
-  override def pointer(addr: Int) = int(addr) - int("referenceVar")
+  override def pointer(name: String) = {
+    val v = int(name)
+    if(v == 0) v else v - int("referenceVar")
+  }
+  override def pointer(addr: Int) = {
+    val v = int(addr)
+    if(v == 0) v else v - int("referenceVar") 
+  }
 }
 
 } // package contikiwrappers
