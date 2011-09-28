@@ -195,9 +195,8 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
   override def byte(addr: Int) = memory.getMemorySegment(addr, 1)(0)
 
   override def int(addr: Int) = {
-    val bytes = memory.getMemorySegment(addr, 4).map(_ & 0xFF)
-    val retVal = (bytes(0) << 8) + bytes(1)
-    Integer.reverseBytes(retVal) >> 16
+    val bytes = memory.getMemorySegment(addr, 2).map(_ & 0xFF)
+    (bytes(1) << 8) + bytes(0)
   }
 
   override def array(addr: Int, length: Int) = memory.getMemorySegment(addr, length)
