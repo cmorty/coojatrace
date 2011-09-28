@@ -367,16 +367,14 @@ trait RichMoteMemory {
   /**
    * Get value of integer variable at address.
    *
-   * '''Note:''' this works only for mote types using SectionMoteMemory, and will throw an
+   * '''Note:''' this works only for mote types using SectionMoteMemory and 32-bit integers, and will throw an
    * exception otherwise. This method should therefore be overriden in other mote type wrappers.
    * @param addr address of variable
    * @return integer value of variable
    */
-  def int(addr: Int) = {
-    val bytes = memory.asInstanceOf[SectionMoteMemory].getMemorySegment(addr, 4).map(_ & 0xFF)
-    val retVal = ((bytes(0) & 0xFF) << 24) + ((bytes(1) & 0xFF) << 16) +
-                 ((bytes(2) & 0xFF) << 8) + (bytes(3) & 0xFF) // TODO: int length
-    Integer.reverseBytes(retVal)
+  def int(addr: Int): Int = {
+    val bytes = memory.asInstanceOf[SectionMoteMemory].getMemorySegment(addr, 4)
+    ((bytes(3) & 0xFF) << 24) + ((bytes(2) & 0xFF) << 16) + ((bytes(1) & 0xFF) << 8) + (bytes(0) & 0xFF)
   }
 
   /**
