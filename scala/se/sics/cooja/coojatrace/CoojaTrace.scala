@@ -53,7 +53,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
    * The scala interpreter.
    * Initialized by `createInterpreter`
    */
-  private var interpreter: scala.tools.nsc.Interpreter = null
+  private var interpreter: scala.tools.nsc.interpreter.IMain = null
 
   /**
    * Status variable showing whether script has been run and is active.
@@ -121,6 +121,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
   private def createInterpreter() = {
     // import interpreter classes
     import scala.tools.nsc._
+    import scala.tools.nsc.interpreter._
     
     val settings = new Settings()
     
@@ -149,7 +150,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     settings.bootclasspath.value = (coojaLibs ::: dynamicLibs).mkString(":")
     
     // create new scala interpreter with classpath and write output to System.out
-    new Interpreter(settings, pwriter)
+    new IMain(settings, pwriter)
   }
 
   /**
@@ -224,13 +225,13 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     // interpret test script
     val res = interpreter.interpret(scriptCode.getText())
 
-    if(res == scala.tools.nsc.InterpreterResults.Success) {
+    if(res == scala.tools.nsc.interpreter.Results.Success) {
       // success, change status
       logger.info("Script active")
       scriptButton.setText("Reset")
       active = true
     }
-    else if(res == scala.tools.nsc.InterpreterResults.Incomplete) {
+    else if(res == scala.tools.nsc.interpreter.Results.Incomplete) {
       // incomplete, show warning dialog
       logger.error("Script incomplete!")
 
