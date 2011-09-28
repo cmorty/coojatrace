@@ -133,7 +133,8 @@ class RichMote(val mote: Mote) extends InterfaceAccessors {
   def cpu: RichCPU = throw new Exception("Unsupported for this mote type")
   
   /**
-   * Get the current contiki process as a signal.
+   * Get the current contiki process as a signal. The process name is read statically from the 
+   * map file.
    * @return [[Signal]] of currently running [[Process]]
    */
   lazy val currentProcess = {
@@ -142,7 +143,11 @@ class RichMote(val mote: Mote) extends InterfaceAccessors {
     )
   }
 
-  // TODO
+  /**
+   * Get the current contiki process as a signal. The process name is read dynamically from the
+   * process structure in mote memory. Does not work when compiled with PROCESS_CONF_NO_PROCESS_NAMES.
+   * @return [[Signal]] of currently running [[Process]]
+   */
   lazy val currentProcessDynamic = {
     val processPtr = memory.variable("process_current", CPointer).toPointer(CPointer)
     val namePtr = *(processPtr+1).toPointer(CArray(32)) // 32 char max!
