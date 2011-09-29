@@ -160,7 +160,7 @@ trait ZipOperator {
    * @return [[Signal]] of list of input signal values
    * @tparam T type of input signals and output signal list
    */
-  def zip[T](signals: Signal[T]*) = {
+  def zip[T](signals: Signal[T]*): Signal[List[T]] = {
     require(signals.size > 0)
     val sigs = signals.reverse
     sigs.tail.foldLeft(sigs.head.map(v => List[T](v))) {
