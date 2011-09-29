@@ -108,7 +108,7 @@ trait MaximumOperator {
   def max[T <% Ordered[T]](es: EventStream[T]): EventStream[T] = {
     es.foldLeft[Option[T]](None) { // None means no value received yet
       case (None, event) => Some(event) // first value is new maximum
-      case (Some(maximum), event) => if(event > maxmimum) Some(event) else Some(maximum)
+      case (Some(maximum), event) => if(event > maximum) Some(event) else Some(maximum)
     }.map(_.get)
   }
 
@@ -158,14 +158,34 @@ trait DeltaOperator {
   /**
    * Computes value differences received from eventstream.
    * @param es [[EventStream]] for whose values deltas are computed
+   * @param start last value for computing first delta 
    * @return [[EventStream]] of deltas
-   * @tparam T type of eventstream (must be implicitly convertable to Long)
+   * @tparam T type of eventstream (must have implicit Numeric[T])
    */
-  def delta[T <% Long](es: EventStream[T]): EventStream[Long] = {
-    es.foldLeft((0L, 0L)) {
-      case ( (last, _), curr ) => (curr, curr - last)
+  def delta[T](es: EventStream[T], start: T)(implicit numeric: Numeric[T]): EventStream[T] = {
+    es.foldLeft((start, numeric.zero)) { // (lastValue, delta)
+      case ( (last, _), curr ) => (curr, numeric.minus(curr, last))
     }.map(_._2)
   }
+
+  /**
+   * Computes value differences received from eventstream.
+   * First received value will generate a delta of its value.
+   * @param es [[EventStream]] for whose values deltas are computed
+   * @return [[EventStream]] of deltas
+   * @tparam T type of eventstream (must have implicit Numeric[T])
+   */
+  def delta[T](es: EventStream[T])(implicit numeric: Numeric[T]): EventStream[T] = 
+    delta(es, numeric.zero)
+
+  /**
+   * Computes value differences received from changes of a signal.
+   * @param sig [[Signal]] for whose changes deltas are computed
+   * @return [[EventStream]] of deltas
+   * @tparam T type of eventstream (must have implicit Numeric[T])
+   */
+  def delta[T](sig: Signal[T])(implicit numeric: Numeric[T]): EventStream[T] = 
+    delta(sig.change, sig.now)
 }
 
 /**
