@@ -198,6 +198,7 @@ object RichMote {
    */
   def clearCache() {
     conversions = Nil
+    cache.clear()
   }
 }
 
