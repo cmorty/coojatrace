@@ -150,7 +150,7 @@ class RichMote(val mote: Mote) extends InterfaceAccessors {
    */
   lazy val currentProcessDynamic = {
     val processPtr = memory.variable("process_current", CPointer).toPointer(CPointer)
-    val namePtr = *(processPtr+1).toPointer(CArray(32)) // 32 char max!
+    val namePtr = *(processPtr+1).toPointer(CArray(32, true)) // 32 char max! and const
     *(namePtr).map(array => 
       Process( array.takeWhile(_ != 0).map(_.toChar).mkString , processPtr.now )
     ) 

@@ -82,12 +82,14 @@ object CByte extends MemVarType[Byte] {
  * Type for (byte) array variables.
  * 
  * @param length size of array in bytes
+ * @param const (optional) when `true` array does not check for changes to its contents, only changes when
+ *   address is changed (uses less ressurces)
  */
-case class CArray(length: Int) extends MemVarType[Array[Byte]] {
+case class CArray(length: Int, const: Boolean = false) extends MemVarType[Array[Byte]] {
   val name = "char["+ length + "]"
   def size(mem: RichMoteMemory) = length
   def get(addr: Int, mem: RichMoteMemory): Signal[Array[Byte]] =
-   mem.addVariable(addr, this, a => mem.addArrayVar(a, length))
+    mem.addVariable(addr, this, a => mem.addArrayVar(a, length, const))
 }
 
 
@@ -335,9 +337,10 @@ trait RichMoteMemory {
    * Create signal of a memory array.
    * @param addr address of array
    * @param len length of array in bytes
+   * @param const if true, do not check for element changes
    * @return [[Signal]] with value of array
    */
-  protected[memorywrappers] def addArrayVar(addr: Int, len: Int): Signal[Array[Byte]]
+  protected[memorywrappers] def addArrayVar(addr: Int, len: Int, const: Boolean): Signal[Array[Byte]]
 
 
   /**

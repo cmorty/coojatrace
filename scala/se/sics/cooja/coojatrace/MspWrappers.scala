@@ -205,8 +205,12 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
   def addIntVar(addr: Int) = memVar(addr, int, _.toInt)
   def addByteVar(addr: Int) = memVar(addr, byte, _.toByte)
   def addPointerVar(addr: Int) = memVar(addr, pointer, _.toInt)
-  def addArrayVar(addr: Int, length: Int) =
+  def addArrayVar(addr: Int, length: Int, const: Boolean) = if(const == true) {
     memVar(addr, array(_: Int, length), _ => array(addr, length))
+  } else {
+    val elements = (addr until addr+length) map (a => memVar(a, byte, _.toByte))
+    operators.zip(elements:_*).map(_.toArray)
+  }
 }
 
 } // package mspwrappers

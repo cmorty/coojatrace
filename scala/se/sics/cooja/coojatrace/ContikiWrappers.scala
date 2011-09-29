@@ -145,7 +145,7 @@ class ContikiMoteRichMemory(val mote: ContikiMote) extends RichMoteMemory {
   def addIntVar(addr: Int) = memoryInterface.addVar(addr, int)
   def addByteVar(addr: Int) = memoryInterface.addVar(addr, byte)
   def addPointerVar(addr: Int) = memoryInterface.addVar(addr, pointer)
-  def addArrayVar(addr: Int, length: Int) = memoryInterface.addVar(addr, array(_, length))
+  def addArrayVar(addr: Int, length: Int, const: Boolean) = memoryInterface.addVar(addr, array(_, length))
 
 
   // return original memory addresses by subtracting offset of reference value
