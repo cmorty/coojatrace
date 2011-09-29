@@ -33,14 +33,16 @@ trait CountOperator {
    * Count the number of events received from eventstream.
    * @param es [[EventStream]] whose events are counted
    * @return [[Signal]] of event count, starts at 0 before first event is received
-   * @tparam A type of eventstream (works with all types)
+   * @tparam T type of eventstream (works with all types)
    */
-  def count[A](es: EventStream[A]): Signal[Int] = {
+  def count[T](es: EventStream[T]): Signal[Int] = {
     es.foldLeft(0) {
-     (count, event) => count+1
+      (count, event) => count+1
     }.hold(0)
   }
 }
+
+
 
 /**
  * Average operator state class.
@@ -56,15 +58,25 @@ trait AverageOperator {
   /**
    * Average the values received from eventstream.
    * @param es [[EventStream]] whose values are averaged
-   * @return [[Signal]] of average, starts with NaN (!) before first value is received
+   * @return [[EventStream]] of average
    * @tparam T type of eventstream (must be implicitly convertable to Double)
    */
-  def avg[T <% Double](es: EventStream[T]): Signal[Double] = {
+  def avg[T <% Double](es: EventStream[T]): EventStream[Double] = {
     es.foldLeft(AvgState(0, 0)) {
       case (AvgState(total, count), value) => AvgState(total+value, count+1)
-    }.map(a => a.total/a.count).hold(Double.NaN)
+    }.map(a => a.total/a.count)
   }
+
+  /**
+   * Average the changes of a signal.
+   * @param sig [[Signal]] whose changes are averaged
+   * @return [[Signal]] of average, starts with NaN (!) before first change
+   * @tparam T type of signal (must be implicitly convertable to Double)
+   */
+  def avg[T <% Double](sig: Signal[T]): Signal[Double] = avg(sig.change).hold(Double.NaN)
 }
+
+
 
 /**
  * Standard deviation operator state class.
@@ -93,7 +105,17 @@ trait StdDevOperator {
       } 
     }.map(s => s.q / s.i).hold(Double.NaN)
   }
+
+  /**
+   * Compute the (population) standard deviation of the changes of a signal.
+   * @param sig [[Signal]] for whose changes standard deviation is computed
+   * @return [[Signal]] of standard deviation, starts with NaN (!) before first change
+   * @tparam T type of signal (must be implicitly convertable to Double)
+   */
+  def stdDev[T <% Double](sig: Signal[T]): Signal[Double] = stdDev(sig.change)
 }
+
+
 
 /**
  * Maximum operator.
@@ -118,10 +140,10 @@ trait MaximumOperator {
    * @return [[Signal]] of maximum
    * @tparam T type of signal (must be implicitly convertable to Ordered[T])
    */
-  def max[T <% Ordered[T]](sig: Signal[T]): Signal[T] = {
-    max(sig.change).hold(sig.now)
-  }
+  def max[T <% Ordered[T]](sig: Signal[T]): Signal[T] = max(sig.change).hold(sig.now)
 }
+
+
 
 /**
  * Minimum operator.
@@ -146,10 +168,10 @@ trait MinimumOperator {
    * @return [[Signal]] of minimum
    * @tparam T type of signal (must be implicitly convertable to Ordered[T])
    */
-  def min[T <% Ordered[T]](sig: Signal[T]): Signal[T] = {
-    min(sig.change).hold(sig.now)
-  }
+  def min[T <% Ordered[T]](sig: Signal[T]): Signal[T] = min(sig.change).hold(sig.now)
 }
+
+
 
 /**
  * Delta operator.
@@ -175,8 +197,7 @@ trait DeltaOperator {
    * @return [[EventStream]] of deltas
    * @tparam T type of eventstream (must have implicit Numeric[T])
    */
-  def delta[T](es: EventStream[T])(implicit numeric: Numeric[T]): EventStream[T] = 
-    delta(es, numeric.zero)
+  def delta[T](es: EventStream[T])(implicit numeric: Numeric[T]): EventStream[T] = delta(es, numeric.zero)
 
   /**
    * Computes value differences received from changes of a signal.
@@ -184,9 +205,10 @@ trait DeltaOperator {
    * @return [[EventStream]] of deltas
    * @tparam T type of eventstream (must have implicit Numeric[T])
    */
-  def delta[T](sig: Signal[T])(implicit numeric: Numeric[T]): EventStream[T] = 
-    delta(sig.change, sig.now)
+  def delta[T](sig: Signal[T])(implicit numeric: Numeric[T]): EventStream[T] = delta(sig.change, sig.now)
 }
+
+
 
 /**
  * Zip operator.
@@ -209,13 +231,14 @@ trait ZipOperator {
   }
 }
 
+
+
 /**
  * Time-adding operator.
  */
 trait WithTimeOperator {
   /**
-   * Add the current simulation time to an event stream by turning each elemnt into a
-   * (time, value) tuple
+   * Add the current simulation time to an event stream by turning each elemnt into a (time, value) tuple.
    * @param es [[EventStream]] to be timed
    * @return [[EventStream]] of (time, value) tuples
    * @tparam T type of eventstream
@@ -225,13 +248,14 @@ trait WithTimeOperator {
   }
 }
 
+
+
 /**
  * Position-adding operator.
  */
 trait WithPositionOperator {
   /**
-   * Adds position number to event stream.
-   *
+   * Adds position number to event stream by turning each element into a (position, value) tuple.
    * @param es [[EventStream]] to number
    * @return [[EventStream]] of (numer, value) tuples
    * @tparam T type of eventstream
@@ -242,6 +266,8 @@ trait WithPositionOperator {
     }
   }
 }
+
+
 
 /**
  * Window operator.
