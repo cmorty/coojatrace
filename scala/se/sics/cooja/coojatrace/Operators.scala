@@ -100,16 +100,26 @@ trait StdDevOperator {
  */
 trait MaximumOperator {
   /**
-   * Compute the maximum of the values received from eventstream.
-   * @param es [[EventStream]] for whose values the maximum is computed
-   * @return [[Signal]] of maximum, starts with -Infinity(!) before first value is received
-   * @tparam T type of eventstream (must be implicitly convertable to Double)
+   * Compute the maximum of the events received from eventstream.
+   * @param es [[EventStream]] for whose events the maximum is computed
+   * @return [[EventStream]] of maximum
+   * @tparam T type of eventstream (must be implicitly convertable to Ordered[T])
    */
-  def max[T <% Double](es: EventStream[T]): Signal[Double] = {
-    val minimum = Double.NegativeInfinity
-    es.foldLeft(minimum) {
-      (maximum, event) => if(event > maximum) event else maximum
-    }.hold(minimum)
+  def max[T <% Ordered[T]](es: EventStream[T]): EventStream[T] = {
+    es.foldLeft[Option[T]](None) { // None means no value received yet
+      case (None, event) => Some(event) // first value is new maximum
+      case (Some(maximum), event) => if(event > maxmimum) Some(event) else Some(maximum)
+    }.map(_.get)
+  }
+
+  /**
+   * Compute the maximum of the changes of a signal.
+   * @param sig [[Signal]] for whose changes the maximum is computed
+   * @return [[Signal]] of maximum
+   * @tparam T type of signal (must be implicitly convertable to Ordered[T])
+   */
+  def max[T <% Ordered[T]](sig: Signal[T]): Signal[T] = {
+    max(sig.change).hold(sig.now)
   }
 }
 
@@ -118,16 +128,26 @@ trait MaximumOperator {
  */
 trait MinimumOperator {
   /**
-   * Compute the minimum of the values received from eventstream.
-   * @param es [[EventStream]] for whose values the minimum is computed
-   * @return [[Signal]] of minimum, starts with +Infinity(!) before first value is received
-   * @tparam T type of eventstream (must be implicitly convertable to Double)
+   * Compute the minimum of the events received from eventstream.
+   * @param es [[EventStream]] for whose events the minimum is computed
+   * @return [[EventStream]] of minimum
+   * @tparam T type of eventstream (must be implicitly convertable to Ordered[T])
    */
-  def min[T <% Double](es: EventStream[T]): Signal[Double] = {
-    val maximum = Double.PositiveInfinity
-    es.foldLeft(maximum) {
-      (minimum, event) => if(event < minimum) event else minimum
-    }.hold(maximum)
+  def min[T <% Ordered[T]](es: EventStream[T]): EventStream[T] = {
+    es.foldLeft[Option[T]](None) { // None means no value received yet
+      case (None, event) => Some(event) // first value is new minimum
+      case (Some(minimum), event) => if(event < minimum) Some(event) else Some(minimum)
+    }.map(_.get)
+  }
+
+  /**
+   * Compute the minimum of the changes of a signal.
+   * @param sig [[Signal]] for whose changes the minimum is computed
+   * @return [[Signal]] of minimum
+   * @tparam T type of signal (must be implicitly convertable to Ordered[T])
+   */
+  def min[T <% Ordered[T]](sig: Signal[T]): Signal[T] = {
+    min(sig.change).hold(sig.now)
   }
 }
 
