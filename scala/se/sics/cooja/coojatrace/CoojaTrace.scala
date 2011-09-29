@@ -47,7 +47,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
   /**
    * Button to run/deactivate test script.
    */
-  val scriptButton = new JButton("Activate");
+  val scriptButton = new JButton("Activate")
 
   /**
    * The scala interpreter.
@@ -75,6 +75,19 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
   // create Swing elements if run with GUI
   if(GUI.isVisualized) createGUI()
 
+  private lazy val referenceWindow = new JInternalFrame("CoojaTrace Reference", true, true, true, true) {
+    val editorPane = new JEditorPane()
+    editorPane.setEditable(false)
+
+    val referenceURL = this.getClass.getResource("/CoojaTraceReference.html")
+    editorPane.setPage(referenceURL)
+
+    add(new JScrollPane(editorPane))
+    setSize(300, 500)
+    setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE)
+    sim.getGUI.getDesktopPane.add(this)
+  }
+
   /**
    * Create Swing elements for plugin GUI.
    */
@@ -89,8 +102,24 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
       }
     })
 
+    // add reference button
+    val referenceButton = new JButton("Reference...")
+    referenceButton.addActionListener(new ActionListener() {
+      def actionPerformed(e: ActionEvent) {
+        referenceWindow.show()
+        try {
+          referenceWindow.setSelected(true)
+        } catch {
+          case e: java.beans.PropertyVetoException => 
+        }
+      }
+    })
+
     // add elements to window
-    add(scriptButton, BorderLayout.PAGE_END)
+    val buttonPanel = new JPanel()
+    buttonPanel.add(scriptButton)
+    buttonPanel.add(referenceButton)
+    add(buttonPanel, BorderLayout.PAGE_END)
     add(new JScrollPane(scriptCode), BorderLayout.CENTER)
     setSize(500,500)
   

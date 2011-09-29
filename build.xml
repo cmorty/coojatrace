@@ -62,7 +62,9 @@
 	
 	
   <target name="jar" depends="compile">
-	<jar destfile="${archive}" basedir="build" />
+	<jar destfile="${archive}" basedir="build">
+    <fileset file="CoojaTraceReference.html" />
+  </jar>
   </target>
 
 </project>
