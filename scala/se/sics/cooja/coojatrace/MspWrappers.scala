@@ -142,7 +142,7 @@ class MspMoteRichCPU(mote: MspMote) extends RichCPU {
 
     // remove monitor on plugin deactivation
     CoojaTracePlugin.forSim(mote.getSimulation).onCleanUp {
-      mote.getCPU.setReigsterWriteMonitor(reg, null)
+      mote.getCPU.setRegisterWriteMonitor(reg, null)
     }
 
     // return signal
