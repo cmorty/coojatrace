@@ -19,6 +19,7 @@ import wrappers._
 import interfacewrappers._
 import contikiwrappers._
 import mspwrappers._
+import generator._
 
 
 
@@ -75,6 +76,9 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
   // create Swing elements if run with GUI
   if(GUI.isVisualized) createGUI()
 
+  /**
+   * Window for API reference.
+   */
   private lazy val referenceWindow = new JInternalFrame("CoojaTrace Reference", true, true, true, true) {
     val editorPane = new JEditorPane()
     editorPane.setEditable(false)
@@ -89,6 +93,11 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
   }
 
   /**
+   * Script code generator.
+   */
+  private lazy val generatorWindow = new GeneratorWindow(this)
+  
+  /**
    * Create Swing elements for plugin GUI.
    */
   private def createGUI() {
@@ -102,6 +111,19 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
       }
     })
 
+    // add generator button
+    val generatorButton = new JButton("Generator...")
+    generatorButton.addActionListener(new ActionListener() {
+      def actionPerformed(e: ActionEvent) {
+        generatorWindow.show()
+        try {
+          generatorWindow.setSelected(true)
+        } catch {
+          case e: java.beans.PropertyVetoException => // ignore
+        }
+      }
+    })
+
     // add reference button
     val referenceButton = new JButton("Reference...")
     referenceButton.addActionListener(new ActionListener() {
@@ -110,7 +132,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
         try {
           referenceWindow.setSelected(true)
         } catch {
-          case e: java.beans.PropertyVetoException => 
+          case e: java.beans.PropertyVetoException => // ignore
         }
       }
     })
@@ -118,6 +140,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     // add elements to window
     val buttonPanel = new JPanel()
     buttonPanel.add(scriptButton)
+    buttonPanel.add(generatorButton)
     buttonPanel.add(referenceButton)
     add(buttonPanel, BorderLayout.PAGE_END)
     add(new JScrollPane(scriptCode), BorderLayout.CENTER)
