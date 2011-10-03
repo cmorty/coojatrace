@@ -10,8 +10,6 @@ import se.sics.cooja._
 import coojatrace._
 
 
-// UGLY GUI CODE BELOW
-
 
 /**
  * Script code generator (window).
@@ -94,49 +92,41 @@ class GeneratorWindow(plugin: CoojaTracePlugin) extends JInternalFrame("Script G
    * Generate the code for specified options and insert in CoojaTrace window.
    */
   private def generate() {
-    var code = "" 
+    // create code print/string writer
+    val codeWriter = new java.io.StringWriter()
+    val code = new java.io.PrintWriter(codeWriter)
 
-    val columnNames = columns.map(_._1).toList
-    val destName = destinationBox.getSelectedItem.asInstanceOf[String]
-    val timeOptions = ("Time column" -> (if(timeColumnOption.isSelected) "\""+timeColumnName.getText+"\"" else "null"))
-    val destOptions = readOptions(destinationOptionPanels(destName)) + timeOptions
-    code += "val logDestination" + counter + " = "
-    code += destGenerators.find(_.name == destName).get.template(destOptions, columnNames)
-    code += "\n"
+    // generate log destination
+    val logDest = "logDestination" + counter
+    code.println("val " + logDest + " = " + generateDestination())
 
-    var moteVal = "mote"
-    if(allMotes.isSelected) {
-      code += "for(mote <- sim.motes.values) {\n"
-    } else {
-      val motes = motesInput.getText.split(",").map(_.trim.toInt)
-      if(motes.size > 1) {
-        code += "for(i <- " +  motes.mkString("List(", ", ", ")") + "; mote = sim.motes(i)) {\n"
-      } else {
-        moteVal = "sim.motes(" + motes.head + ")"
-      }
-    }
+    // generate mote accessor
+    val (moteVal, moteCode, block) = generateMote()
+    if(moteCode != "") code.println(moteCode)
 
-    if(moteVal == "mote") code += "  "
-    code += "log(logDestination" + counter
+    // generate log statement
+    if(block) code.print("  ")
+    code.print("log(" + logDest)
 
-    for((name, col, colOpts, operator) <- columns) {
-      code += ",\n  "
-      if(moteVal == "mote") code += "  "
+    val sep = if(block) ",\n    " else ",\n  "
+    code.println(generateColumns(moteVal).mkString(sep, sep, ""))
 
-      code += operator.template(col.template(moteVal, colOpts))
-    }
+    if(block) code.print("  ")
+    code.println(")")
 
-    code += "\n"
-    if(moteVal == "mote") code += "  "
-    code += ")\n"
+    // close block if neccessary
+    if(block) code.println("}")
 
-    if(moteVal == "mote") code += "}\n"
+    // add blank line
+    code.println()
 
-    code += "\n"
-
+    // increase variable name counter
     counter += 1
 
-    plugin.scriptCode.append(code)
+    // add code to script
+    plugin.scriptCode.append(codeWriter.getBuffer.toString)
+  
+    // focus CoojaTrace window
     try {
       plugin.setSelected(true)
     } catch {
@@ -259,6 +249,27 @@ trait DestinationGeneratorComponent { this: GeneratorWindow =>
   add(destinationPanel)
 
   /**
+   * Generate code for log destination.
+   * @return script code for log destination creation
+   */
+  def generateDestination() = {
+    // get selected destination type name
+    val destName = destinationBox.getSelectedItem.asInstanceOf[String]
+    
+    // get column names from table (see ColumnGeneratorComponent)
+    val columnNames = columns.map(_._1).toList
+
+    // get time column options (see ColumnGeneratorComponent)
+    val timeOptions = ("Time column" -> (if(timeColumnOption.isSelected) "\""+timeColumnName.getText+"\"" else "null"))
+
+    // get destination options and add time column options
+    val destOptions = readOptions(destinationOptionPanels(destName)) + timeOptions
+    
+    // get destination generator by name and call template function with options and column names
+    destGenerators.find(_.name == destName).get.template(destOptions, columnNames)
+  }
+
+  /**
    * Reset destination options to default values.
    */
   def resetDestination() {
@@ -315,10 +326,15 @@ trait MotesGeneratorComponent { this: GeneratorWindow =>
   motePanel.add(motesInput)
 
   // change motes input editable property depending on specific mote radio button status 
+  allMotes.addActionListener(new ActionListener() {
+    def actionPerformed(e: ActionEvent) {
+      motesInput.setEditable(false)
+    }
+  })
   specificMotes.addActionListener(new ActionListener() {
     def actionPerformed(e: ActionEvent) {
-      motesInput.setEditable(specificMotes.isSelected)
-      if(specificMotes.isSelected) motesInput.requestFocusInWindow() // focus text field
+      motesInput.setEditable(true)
+      motesInput.requestFocusInWindow() // focus text field
     }
   })
 
@@ -326,11 +342,29 @@ trait MotesGeneratorComponent { this: GeneratorWindow =>
   add(motePanel)
 
   /**
+   * Generate code for mote iteration.
+   * @return tuple of (mote variable name, loop statement, boolean value if a indented block is created)
+   */
+  def generateMote() = {
+    if(allMotes.isSelected) {
+      ("mote", "for(mote <- sim.motes.values) {", true)
+    } else {
+      val motes = motesInput.getText.split(",").map(_.trim.toInt)
+      if(motes.size > 1) {
+        ("mote", "for(i <- " +  motes.mkString("List(", ", ", ")") + "; mote = sim.motes(i)) {", true)
+      } else {
+        ("sim.motes(" + motes.head + ")", "", false)
+      }
+    }
+  }
+
+  /**
    * Reset mote selection options to default values.
    */
   def resetMotes() {
     // select all motes
     allMotes.setSelected(true)
+    motesInput.setEditable(false)
 
     // reset motes input text
     motesInput.setText("2, 3, 5")
@@ -643,12 +677,24 @@ trait ColumnGeneratorComponent { this: GeneratorWindow =>
   add(columnPanel)
 
   /**
+   * Generate code for log columns.
+   * @return list of script code string for log columns
+   */
+  def generateColumns(moteVal: String) =
+    for((_, col, colOpts, operator) <- columns) yield operator.template(col.template(moteVal, colOpts))
+
+  /**
    * Reset column selection to default values.
    */
   def resetColumns() {
     // clear column list, update table
     columns.clear()
     columnModel.fireTableDataChanged()
+
+    // reset time column options
+    timeColumnOption.setSelected(true)
+    timeColumnName.setText("Time")
+    timeColumnName.setEditable(false)
 
     // reset all column options to default values
     columnType.setSelectedIndex(0)
