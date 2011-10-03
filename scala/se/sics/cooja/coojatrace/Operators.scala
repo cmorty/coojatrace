@@ -40,6 +40,15 @@ trait CountOperator {
       (count, event) => count+1
     }.hold(0)
   }
+
+  /**
+   * Count the number of changes of a signal.
+   * @param sig [[Signal]] whose changes are counted
+   * @return [[Signal]] of change count, starts at 0 before first change
+   * @tparam T type of signal (works with all types)
+   */
+  def count[T](sig: Signal[T]): Signal[Int] = count(sig.change)
+  
 }
 
 
@@ -91,11 +100,11 @@ trait StdDevOperator {
   /**
    * Compute the (population) standard deviation of the values received from eventstream.
    * @param es [[EventStream]] for whose values standard deviation is computed
-   * @return [[Signal]] of standard deviation, starts with NaN (!) before first value is received
+   * @return [[EventStream]] of standard deviation
    * @tparam T type of eventstream (must be implicitly convertable to Double)
    * @see [[http://en.wikipedia.org/wiki/Standard_deviation#Rapid_calculation_methods]]
    */
-  def stdDev[T <% Double](es: EventStream[T]): Signal[Double] = {
+  def stdDev[T <% Double](es: EventStream[T]): EventStream[Double] = {
     es.foldLeft(StdDevState(0, 0, 0)) {
       case (StdDevState(a, q, i), value) => {
         val ni = i + 1
@@ -103,7 +112,7 @@ trait StdDevOperator {
         val nq = q + (value - a)*(value - na) 
         StdDevState(na, nq, ni)
       } 
-    }.map(s => s.q / s.i).hold(Double.NaN)
+    }.map(s => s.q / s.i)
   }
 
   /**
@@ -112,7 +121,7 @@ trait StdDevOperator {
    * @return [[Signal]] of standard deviation, starts with NaN (!) before first change
    * @tparam T type of signal (must be implicitly convertable to Double)
    */
-  def stdDev[T <% Double](sig: Signal[T]): Signal[Double] = stdDev(sig.change)
+  def stdDev[T <% Double](sig: Signal[T]): Signal[Double] = stdDev(sig.change).hold(Double.NaN)
 }
 
 
