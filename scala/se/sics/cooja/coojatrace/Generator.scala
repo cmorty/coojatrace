@@ -14,220 +14,68 @@ import coojatrace._
 
 
 /**
- * Script code generator.
+ * Script code generator (window).
+ *
+ * @param plugin CoojaTracePlugin into which code will be inserted
  */
-class GeneratorWindow(plugin: CoojaTracePlugin) extends JInternalFrame("Script Generator", true, true, true, true) {
-  /**
-   * Destination selection pane.
-   */
-  val destinationPanel = new JPanel(new FlowLayout(FlowLayout.LEADING))
-  destinationPanel.setBorder(BorderFactory.createTitledBorder("Destination"))
-
-  val destGenerators = DestinationGenerators.generators.filter(_.available)
-  val destinations = destGenerators.map(_.name).toArray.asInstanceOf[Array[Object]]
-  val destinationBox = new JComboBox(destinations)
-  destinationPanel.add(destinationBox)
-
-  val destinationOptionsPanel = new JPanel(new CardLayout())
-  destinationPanel.add(destinationOptionsPanel)
-
-  val destinationOptionPanels = new collection.mutable.HashMap[String, JPanel]()
-
-  for(DestinationGenerator(name, options, _) <- destGenerators) {
-    val panel = new JPanel(new GridLayout(0, 2))
-    
-    for((option, value) <- options) {
-      panel.add(new JLabel(option))
-      panel.add(new JTextField(value))
-    }
-
-    destinationOptionPanels(name) = panel
-    destinationOptionsPanel.add(panel, name)
-  }
-
-  destinationBox.addItemListener(new ItemListener() {
-    def itemStateChanged(evt: ItemEvent) {
-      destinationOptionsPanel.getLayout.asInstanceOf[CardLayout].show(destinationOptionsPanel, evt.getItem.asInstanceOf[String])
-    }
-  })
-
-	/**
-   * Mote selection pane.
-   */
-  val motePanel = new JPanel(new FlowLayout(FlowLayout.LEADING))
-  motePanel.setBorder(BorderFactory.createTitledBorder("Motes"))
-
-  val moteButtonGroup = new ButtonGroup()
-
-  val allMotes = new JRadioButton("All motes")
-  allMotes.setSelected(true)
-  moteButtonGroup.add(allMotes)
-  motePanel.add(allMotes)
-
-  val specificMotes = new JRadioButton("Specific motes: ")
-  moteButtonGroup.add(specificMotes)
-  motePanel.add(specificMotes)
-  specificMotes.addActionListener(new ActionListener() {
-    def actionPerformed(e: ActionEvent) {
-      motesInput.setEditable(specificMotes.isSelected)
-    }
-  })
-
-  val motesInput = new JTextField("2, 3, 5", 20)
-  motesInput.setEditable(false)
-  motePanel.add(motesInput)
+class GeneratorWindow(plugin: CoojaTracePlugin) extends JInternalFrame("Script Generator", true, true, true, true) 
+  with DestinationGeneratorComponent with MotesGeneratorComponent
+  with OperatorGeneratorComponent with ColumnGeneratorComponent {
+  // NOTE: Constructors for all traits have alredy been called when this line is reached
 
   /**
-   * Column selection pane.
-   */
-  val columnPanel = new JPanel()
-  columnPanel.setLayout(new BoxLayout(columnPanel, BoxLayout.PAGE_AXIS))
-  columnPanel.setBorder(BorderFactory.createTitledBorder("Columns"))
-
-  val columns = collection.mutable.ListBuffer[(String, ColumnGenerator, Map[String, String], OperatorGenerator)]()
-
-  val columnModel = new javax.swing.table.AbstractTableModel {
-    override def getColumnName(col: Int): String = List("Column name", "Source", "Operator")(col)
-    def getRowCount = columns.size
-    def getColumnCount = 3
-    def getValueAt(row: Int, col: Int): Object = col match {
-      case 0 => columns(row)._1
-      case 1 => columns(row)._2.name
-      case 2 => columns(row)._4.name
-    }
-    override def setValueAt(value: Object, row: Int, col: Int) { col match {
-      case 0 => columns(row) = columns(row).copy(_1 = value.asInstanceOf[String])
-      case 2 => columns(row) = columns(row).copy(_4 = OperatorGenerators.generators.find(_.name == value.asInstanceOf[String]).get)
-    }}
-    override def isCellEditable(row: Int, col: Int) = (col != 1) 
-  }
-
-  val timeColumnPanel = new JPanel(new FlowLayout(FlowLayout.LEADING))
-  columnPanel.add(timeColumnPanel)
-  val timeColumnOption = new JCheckBox("Simulation time (ns) column, column name:")
-  timeColumnOption.setSelected(true)
-  timeColumnPanel.add(timeColumnOption)
-  val timeColumnName = new JTextField("Time", 10)
-  timeColumnPanel.add(timeColumnName)
-  timeColumnOption.addActionListener(new ActionListener() {
-    def actionPerformed(e: ActionEvent) {
-      timeColumnName.setEditable(timeColumnOption.isSelected)
-    }
-  })
-
-
-  val operators = OperatorGenerators.generators.map(_.name).toArray.asInstanceOf[Array[Object]]
-  val operatorBox = new JComboBox(operators)
-
-
-  val columnTable = new JTable(columnModel)
-  columnTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
-  columnTable.setRowSelectionAllowed(true)
-  columnTable.setColumnSelectionAllowed(false)
-  columnTable.setFillsViewportHeight(true)
-  columnTable.getColumnModel.getColumn(2).setCellEditor(new DefaultCellEditor(operatorBox))
-  columnPanel.add(new JScrollPane(columnTable))
-
-  val editPanel = new JPanel(new FlowLayout(FlowLayout.LEADING))
-  columnPanel.add(editPanel)
-
-  val columnTypes = ColumnGenerators.generators.map(_.name).toArray.asInstanceOf[Array[Object]]
-  val columnType = new JComboBox(columnTypes)
-  editPanel.add(columnType)
-  columnType.addItemListener(new ItemListener() {
-    def itemStateChanged(evt: ItemEvent) {
-      columnOptionsPanel.getLayout.asInstanceOf[CardLayout].show(columnOptionsPanel, evt.getItem.asInstanceOf[String])
-    }
-  })
-
-  val addButton = new JButton("add")
-  addButton.addActionListener(new ActionListener() {
-    def actionPerformed(e: ActionEvent) {
-      val colType = ColumnGenerators.generators.find(_.name == columnType.getSelectedItem.asInstanceOf[String]).get
-      val options = readOptions(columnOptionPanels(colType.name))
-      val newCol = (colType.name, colType, options, OperatorGenerators.none)
-      if(colType.eventStream) {
-        if(!columns.isEmpty && (columns.head._2.eventStream || columns.head._4.alwaysEventStream))
-          return // TODO: ERROR
-        columns.prepend(newCol)
-        columnModel.fireTableRowsInserted(0, 0)
-      } else {
-        columns.append(newCol)
-        columnModel.fireTableRowsInserted(columnModel.getRowCount-1, columnModel.getRowCount-1)
-      }
-    }
-  })
-  editPanel.add(addButton)
-
-  val removeButton = new JButton("remove")
-  removeButton.addActionListener(new ActionListener() {
-    def actionPerformed(e: ActionEvent) {
-      for(r <- columnTable.getSelectedRows) {
-        columnModel.fireTableRowsDeleted(r, r)
-        columns.remove(r)
-      }
-    }
-  })
-  editPanel.add(removeButton)
-
-  val columnOptionsPanel = new JPanel(new CardLayout())
-  columnPanel.add(columnOptionsPanel)
-
-  val columnOptionPanels = new collection.mutable.HashMap[String, JPanel]()
-
-  for(ColumnGenerator(name, _, options, _) <- ColumnGenerators.generators) {
-    val panel = new JPanel(new GridLayout(0, 2))
-    
-    for(option <- options) {
-      panel.add(new JLabel(option))
-      panel.add(new JTextField())
-    }
-
-    columnOptionPanels(name) = panel
-    columnOptionsPanel.add(panel, name)
-  }
-
-
-  /**
-   * Button pane.
+   * Button panel.
    */
   val buttonPanel = new JPanel()
 
   /**
-   * Insert button.
+   * Generate button.
    */
-  val insertButton = new JButton("Generate")
-  insertButton.addActionListener(new ActionListener() {
+  val generateButton = new JButton("Generate")
+  generateButton.addActionListener(new ActionListener() {
     def actionPerformed(e: ActionEvent) {
       generate()
     }
   })
-  buttonPanel.add(insertButton)
-
+  buttonPanel.add(generateButton)
 
   /**
    * Reset button.
    */
   val resetButton = new JButton("Reset")
-  insertButton.addActionListener(new ActionListener() {
+  resetButton.addActionListener(new ActionListener() {
     def actionPerformed(e: ActionEvent) {
-      // TODO
+      resetDestination()
+      resetMotes()
+      resetColumns()
     }
   })
   buttonPanel.add(resetButton)
 
-  add(destinationPanel)
-  add(motePanel)
-  add(columnPanel)
+  // add button panel to window
   add(buttonPanel)
 
+  // set window size
   setSize(400, 500)
+
+  // use BoxLayout to put panels above each other
   getContentPane.setLayout(new BoxLayout(getContentPane, BoxLayout.PAGE_AXIS))
+
+  // pack all elements
   pack()
+
+  // hide this window when closed, do not destroy
   setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE)
+
+  // add window to dekstop
   plugin.sim.getGUI.getDesktopPane.add(this)
 
-  private def readOptions(panel: JPanel): Map[String, String] = {
+  /**
+   * Get a (name -> value) map from an options panel.
+   * @param panel JPanel with JLabels for names and JTextFields for values in alternating order
+   * @return Map of (name -> value) pairs
+   */
+  def readOptions(panel: JPanel): Map[String, String] = {
     val labels = panel.getComponents.collect {
       case lab: JLabel => lab.getText
     }
@@ -237,8 +85,14 @@ class GeneratorWindow(plugin: CoojaTracePlugin) extends JInternalFrame("Script G
     (labels zip fields).toMap
   }
 
+  /**
+   * Counts generated logdestinations to prevent variable name collisions.
+   */
   var counter = 0
 
+  /**
+   * Generate the code for specified options and insert in CoojaTrace window.
+   */
   private def generate() {
     var code = "" 
 
@@ -266,7 +120,7 @@ class GeneratorWindow(plugin: CoojaTracePlugin) extends JInternalFrame("Script G
     code += "log(logDestination" + counter
 
     for((name, col, colOpts, operator) <- columns) {
-      code += ",\n    "
+      code += ",\n  "
       if(moteVal == "mote") code += "  "
 
       code += operator.template(col.template(moteVal, colOpts))
@@ -292,21 +146,42 @@ class GeneratorWindow(plugin: CoojaTracePlugin) extends JInternalFrame("Script G
 }
 
 
-case class DestinationGenerator(name: String, options: Map[String, String],
-                                template: (Map[String, String], List[String]) => String) {
-  def available = true
-}
 
-object DestinationGenerators {
-  val generators = List(
-    DestinationGenerator("Log file",
-      Map("Filename" -> "cooja.log", "Header (true/false)" -> "true", "Seperator" -> "\\t"),
-      (o, c) => "LogFile(\"" + o("Filename") + "\", " + c.map("\"" + _ + "\"").mkString("List(", ", ", ")") + ", header=" + o("Header (true/false)") + ", sep=\"" + o("Seperator") + "\", timeColumn = " + o("Time column") + ")"),
+/**
+ * Generator component for log destination options.
+ */
+trait DestinationGeneratorComponent { this: GeneratorWindow => 
+  /**
+   * Log destination code generator.
+   *
+   * @param name name of log destination
+   * @param options map of (name -> defaultValue) pairs of options for this generator
+   * @param template function taking the options map and a list of column names, outputs code to create log destination
+   */
+  case class DestinationGenerator(name: String, options: Map[String, String],
+    template: (Map[String, String], List[String]) => String) {
+    /**
+     * Check if this generator can be used.
+     * @return `true` if generator is available
+     */
+    def available = true
+  }
 
+  /**
+   * All available log destination generators.
+   */
+  val destinationGenerators = List(
+    // Log window destination
     DestinationGenerator("Log window",
       Map("Window title" -> "CoojaTrace Log"),
       (o, c) => "LogWindow(\"" + o("Window title") + "\", " + c.map("\"" + _ + "\"").mkString("List(", ", ", ")") + ", timeColumn = " + o("Time column") + ")"),
 
+    // Log file destination
+    DestinationGenerator("Log file",
+      Map("Filename" -> "cooja.log", "Header (true/false)" -> "true", "Seperator" -> "\\t"),
+      (o, c) => "LogFile(\"" + o("Filename") + "\", " + c.map("\"" + _ + "\"").mkString("List(", ", ", ")") + ", header=" + o("Header (true/false)") + ", sep=\"" + o("Seperator") + "\", timeColumn = " + o("Time column") + ")"),
+
+    // SQLite table destination (if plugin is loaded)
     new DestinationGenerator("SQLite Table",
       Map("SQLite DB file" -> "coojatrace.db", "Table name" -> "log"),
       (o, c) => "LogTable(SQLiteDB(\"" + o("SQLite DB file") + "\"), \"" + o("Table name") + "\", " + c.map("\"" + _ + "\"").mkString("List(", ", ", ")") + ", timeColumn = " + o("Time column") + ")") {
@@ -320,16 +195,168 @@ object DestinationGenerators {
       } 
     }
   )
+
+  /**
+   * Destination selection panel.
+   */
+  val destinationPanel = new JPanel(new FlowLayout(FlowLayout.LEADING))
+  destinationPanel.setBorder(BorderFactory.createTitledBorder("Destination"))
+
+  /**
+   * List of available generators.
+   */
+  val destGenerators = destinationGenerators.filter(_.available)
+
+  /**
+   * Available generator names.
+   */
+  val destNames = destGenerators.map(_.name)
+
+  /**
+   * Destination type combo box.
+   */
+  val destinationBox = new JComboBox(destNames.toArray.asInstanceOf[Array[Object]])
+  destinationPanel.add(destinationBox)
+
+  /**
+   * Panel with CardLayout for destination options (panel).
+   */
+  val destinationOptionsPanel = new JPanel(new CardLayout())
+  destinationPanel.add(destinationOptionsPanel)
+
+  /**
+   * Map of (destinationName -> OptionPanel) pairs. Used to retrieve correct panel from type selection.
+   */
+  val destinationOptionPanels = (for(DestinationGenerator(name, options, _) <- destGenerators) yield {
+    // create new option panel for this generator
+    val panel = new JPanel(new GridLayout(0, 2))
+    
+    // add option -> value GUI components
+    for((option, value) <- options) {
+      val label = new JLabel(option)
+      val textField = new JTextField(value)
+      label.setLabelFor(textField)
+      panel.add(label)
+      panel.add(textField)
+    }
+
+    // add to CardLayout
+    destinationOptionsPanel.add(panel, name)
+
+    // return map tuple
+    (name, panel)
+  }).toMap
+
+  // show correct options panel for selected destination type
+  destinationBox.addItemListener(new ItemListener() {
+    def itemStateChanged(evt: ItemEvent) {
+      val cardLayout = destinationOptionsPanel.getLayout.asInstanceOf[CardLayout]
+      cardLayout.show(destinationOptionsPanel, evt.getItem.asInstanceOf[String])
+    }
+  })
+
+  // add destination selection panel to generator window
+  add(destinationPanel)
+
+  /**
+   * Reset destination options to default values.
+   */
+  def resetDestination() {
+    // select first log destination type
+    destinationBox.setSelectedIndex(0)
+
+    // set all option values to defaults
+    for { (name, panel) <- destinationOptionPanels
+          DestinationGenerator(gname, options, _) <- destinationGenerators
+          if(name == gname)
+    } panel.getComponents.collect {
+      case lab: JLabel => lab.getLabelFor.asInstanceOf[JTextField].setText(options(lab.getText))
+    }
+  }
 }
 
 
-case class OperatorGenerator(name: String, alwaysEventStream: Boolean, template: String => String)
+
+/**
+ * Generator component for mote selection.
+ */
+trait MotesGeneratorComponent { this: GeneratorWindow => 
+  /**
+   * Mote selection panel.
+   */
+  val motePanel = new JPanel(new FlowLayout(FlowLayout.LEADING))
+  motePanel.setBorder(BorderFactory.createTitledBorder("Motes"))
+
+  /**
+   * Radio button group.
+   */
+  val moteButtonGroup = new ButtonGroup()
+
+  /**
+   * All motes radio button.
+   */
+  val allMotes = new JRadioButton("All motes")
+  allMotes.setSelected(true)
+  moteButtonGroup.add(allMotes)
+  motePanel.add(allMotes)
+
+  /**
+   * Specific motes radio button.
+   */
+  val specificMotes = new JRadioButton("Specific motes: ")
+  moteButtonGroup.add(specificMotes)
+  motePanel.add(specificMotes)
+
+  /** 
+   * Specific motes text input field.
+   */
+  val motesInput = new JTextField("2, 3, 5", 20)
+  motesInput.setEditable(false)
+  motePanel.add(motesInput)
+
+  // change motes input editable property depending on specific mote radio button status 
+  specificMotes.addActionListener(new ActionListener() {
+    def actionPerformed(e: ActionEvent) {
+      motesInput.setEditable(specificMotes.isSelected)
+      if(specificMotes.isSelected) motesInput.requestFocusInWindow() // focus text field
+    }
+  })
+
+  // add mote selection panel to generator window
+  add(motePanel)
+
+  /**
+   * Reset mote selection options to default values.
+   */
+  def resetMotes() {
+    // select all motes
+    allMotes.setSelected(true)
+
+    // reset motes input text
+    motesInput.setText("2, 3, 5")
+  }
+}
 
 
-object OperatorGenerators {
-  val none = OperatorGenerator("(No operator)", false, c => c)
-  val generators = List[OperatorGenerator](
-    none,
+
+/**
+ * Generator component for operator selection.
+ */
+trait OperatorGeneratorComponent { this: GeneratorWindow =>
+  /**
+   * Operator code generator.
+   *
+   * @param name name of operator
+   * @param alwaysEventStream `true` if this operator will return an eventstream even when applied to a signal
+   * @param template function taking code for a signal/eventstream, outputs code to apply operator
+   */
+  case class OperatorGenerator(name: String, alwaysEventStream: Boolean, template: String => String)
+
+  /**
+   * List of available operator generators.
+   */
+  val operatorGenerators = List[OperatorGenerator](
+    OperatorGenerator("(No operator)", false, c => c),
     OperatorGenerator("Count", false, "count(" + _ + ")"),
     OperatorGenerator("Maximum", false, "max(" + _ + ")"),
     OperatorGenerator("Minimum", false, "min(" + _ + ")"),
@@ -337,14 +364,40 @@ object OperatorGenerators {
     OperatorGenerator("Standard deviation", false, "stdDev(" + _ + ")"),
     OperatorGenerator("Delta", true, "delta(" + _ + ")")
   )
+
+  /**
+   * (Default) no-op operator.
+   */
+  val noOperator = operatorGenerators.head
+
+
+  /**
+   * Operator selection combo box, used as table cell renderer.
+   */
+  val operatorBox = new JComboBox(operatorGenerators.map(_.name).toArray.asInstanceOf[Array[Object]])
 }
 
 
-case class ColumnGenerator(name: String, eventStream: Boolean, options: List[String],
-                           template: (String, Map[String, String]) => String)
 
-object ColumnGenerators {
-  val generators = List[ColumnGenerator](
+/**
+ * Generator component for column selection.
+ */
+trait ColumnGeneratorComponent { this: GeneratorWindow =>
+  /**
+   * Log column code generator.
+   *
+   * @param name name of column value type
+   * @param eventStream `true` if this generator return an event stream
+   * @param options list of option names
+   * @param template function taking mote accessor code and options map, outputs code to apply operator
+   */
+  case class ColumnGenerator(name: String, eventStream: Boolean, options: List[String],
+    template: (String, Map[String, String]) => String)
+
+  /**
+   * List of available column generators.
+   */
+  val columnGenerators = List[ColumnGenerator](
     ColumnGenerator("Mote Name", false, Nil,
                     (m, o) => "Val("+ m + ".toString)"),
     ColumnGenerator("Mote ID (static)", false, Nil,
@@ -426,4 +479,183 @@ object ColumnGenerators {
     ColumnGenerator("Constant string", false, List("String"),
                     (m, o) => "Val(\"" + o("String") + "\")")
   )
+
+
+  /**
+   * List of created columns. Contains (columnName, columnGenerator, columnOptions, operatorGenerator) tuples
+   */  
+  val columns = collection.mutable.ListBuffer[(String, ColumnGenerator, Map[String, String], OperatorGenerator)]()
+
+  /**
+   * Data model for column table.
+   */
+  val columnModel = new javax.swing.table.AbstractTableModel {
+    override def getColumnName(col: Int): String = List("Column name", "Source", "Operator")(col)
+    def getRowCount = columns.size
+    def getColumnCount = 3
+    def getValueAt(row: Int, col: Int): Object = col match {
+      case 0 => columns(row)._1
+      case 1 => columns(row)._2.name
+      case 2 => columns(row)._4.name
+    }
+    override def setValueAt(value: Object, row: Int, col: Int) { col match {
+      case 0 =>
+        columns(row) = columns(row).copy(_1 = value.asInstanceOf[String])
+      case 2 => 
+        columns(row) = columns(row).copy(_4 = operatorGenerators.find(_.name == value.asInstanceOf[String]).get)
+    }}
+    override def isCellEditable(row: Int, col: Int) = (col != 1) 
+  }
+
+
+  /**
+   * Column selection panel.
+   */
+  val columnPanel = new JPanel()
+  columnPanel.setLayout(new BoxLayout(columnPanel, BoxLayout.PAGE_AXIS))
+  columnPanel.setBorder(BorderFactory.createTitledBorder("Columns"))
+
+
+  /**
+   * Time column options panel.
+   */  
+  val timeColumnPanel = new JPanel(new FlowLayout(FlowLayout.LEADING))
+  columnPanel.add(timeColumnPanel)
+
+  /**
+   * Time column check box.
+   */
+  val timeColumnOption = new JCheckBox("Simulation time (ns) column, column name:")
+  timeColumnOption.setSelected(true)
+  timeColumnPanel.add(timeColumnOption)
+
+  /**
+   * Time column name text field.
+   */
+  val timeColumnName = new JTextField("Time", 10)
+  timeColumnPanel.add(timeColumnName)
+
+  // enable/disable time column name text field based on time column check box
+  timeColumnOption.addActionListener(new ActionListener() {
+    def actionPerformed(e: ActionEvent) {
+      timeColumnName.setEditable(timeColumnOption.isSelected)
+    }
+  })
+
+
+  /**
+   * Columns table.
+   */
+  val columnTable = new JTable(columnModel)
+  columnTable.setFillsViewportHeight(true)
+  columnPanel.add(new JScrollPane(columnTable))
+
+  // only allow single row selection (confuses remove otherwise)
+  columnTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+  columnTable.setRowSelectionAllowed(true)
+  columnTable.setColumnSelectionAllowed(false)
+
+  // use operator selection combo box for operator column cells
+  columnTable.getColumnModel.getColumn(2).setCellEditor(new DefaultCellEditor(operatorBox))
+
+
+  /**
+   * Column add/remove panel.
+   */
+  val editPanel = new JPanel(new FlowLayout(FlowLayout.LEADING))
+  columnPanel.add(editPanel)
+
+  /**
+   * Column type selection combo box.
+   */
+  val columnType = new JComboBox(columnGenerators.map(_.name).toArray.asInstanceOf[Array[Object]])
+  editPanel.add(columnType)
+
+  // show correct options panel for selected destination type
+  columnType.addItemListener(new ItemListener() {
+    def itemStateChanged(evt: ItemEvent) {
+      val cardLayout = columnOptionsPanel.getLayout.asInstanceOf[CardLayout]
+      cardLayout.show(columnOptionsPanel, evt.getItem.asInstanceOf[String])
+    }
+  })
+
+  /**
+   * Column add button.
+   */
+  val addButton = new JButton("add")
+  addButton.addActionListener(new ActionListener() {
+    def actionPerformed(e: ActionEvent) {
+      val colType = columnGenerators.find(_.name == columnType.getSelectedItem.asInstanceOf[String]).get
+      val options = readOptions(columnOptionPanels(colType.name))
+      val newCol = (colType.name, colType, options, noOperator)
+      if(colType.eventStream) {
+        if(!columns.isEmpty && (columns.head._2.eventStream || columns.head._4.alwaysEventStream))
+          return // TODO: ERROR
+        columns.prepend(newCol)
+        columnModel.fireTableRowsInserted(0, 0)
+      } else {
+        columns.append(newCol)
+        columnModel.fireTableRowsInserted(columnModel.getRowCount-1, columnModel.getRowCount-1)
+      }
+    }
+  })
+  editPanel.add(addButton)
+
+  /** 
+   * Column remove button.
+   */
+  val removeButton = new JButton("remove")
+  removeButton.addActionListener(new ActionListener() {
+    def actionPerformed(e: ActionEvent) {
+      for(r <- columnTable.getSelectedRows) {
+        columns.remove(r)
+        columnModel.fireTableRowsDeleted(r, r)
+      }
+    }
+  })
+  editPanel.add(removeButton)
+
+  /**
+   * Column options card layout.
+   */
+  val columnOptionsPanel = new JPanel(new CardLayout())
+  columnPanel.add(columnOptionsPanel)
+
+  /**
+   * Map of (columnName -> OptionPanel) pairs. Used to retrieve correct panel from type selection.
+   */
+  val columnOptionPanels = (for(ColumnGenerator(name, _, options, _) <- columnGenerators) yield {
+    val panel = new JPanel(new GridLayout(0, 2))
+    
+    for(option <- options) {
+      val label = new JLabel(option)
+      val textField = new JTextField()
+      label.setLabelFor(textField)
+      panel.add(label)
+      panel.add(textField)
+    }
+
+    columnOptionsPanel.add(panel, name)
+    (name, panel)
+  }).toMap
+
+  // add column selection panel to generator window
+  add(columnPanel)
+
+  /**
+   * Reset column selection to default values.
+   */
+  def resetColumns() {
+    // clear column list, update table
+    columns.clear()
+    columnModel.fireTableDataChanged()
+
+    // reset all column options to default values
+    columnType.setSelectedIndex(0)
+
+    // clear all option values
+    for { (name, panel) <- columnOptionPanels } panel.getComponents.collect {
+      case tf: JTextField => tf.setText("")
+    }
+  }
 }
