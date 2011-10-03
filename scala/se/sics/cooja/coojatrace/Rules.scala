@@ -222,6 +222,11 @@ case class LogWindow(name: String, columns: List[String] = List("Value"), timeCo
   window.setSize(300, 500)
   window.show()
   sim.getGUI.getDesktopPane.add(window)
+  try {
+    window.setSelected(true)
+  } catch {
+    case e: java.beans.PropertyVetoException => // ignore
+  }
 
   // close window on plugin deactivation
   CoojaTracePlugin.forSim(sim).onCleanUp {
