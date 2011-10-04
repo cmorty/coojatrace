@@ -32,9 +32,32 @@ package object assertions {
     for(c <- cond.distinct) {
       // assertion violated
       if(c == false) {
-        // error and stop (TODO: use logger?)
-        println("ASSERT: " + (if(name != null) name else cond) + " is " + c)
+        // log and stop
+        CoojaTracePlugin.forSim(sim).logger.info("ASSERTION: " + (if(name != null) name else cond) + " is " + c)
         sim.stopSimulation() 
+
+        if(GUI.isVisualized) {
+          // show dialog if visualized
+          javax.swing.JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+            "The following assertion failed and stopped the simulation:\n\n" + name,
+            "Assertion failed", javax.swing.JOptionPane.INFORMATION_MESSAGE)
+        } else {
+          // quit cooja if not visualized (code from LogScriptEngine plugin)
+          new Thread() {
+            override def run() {
+              try { Thread.sleep(500) } catch { case e: InterruptedException => }
+              sim.getGUI.doQuit(false)
+            }
+          }.start()
+
+          new Thread() {
+            override def run() {
+              try { Thread.sleep(2000) } catch { case e: InterruptedException => }
+              CoojaTracePlugin.forSim(sim).logger.warn("Killing COOJA")
+              System.exit(1)
+            }
+          }.start()
+        }
       }
     }
   }
