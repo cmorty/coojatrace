@@ -1,8 +1,307 @@
 <html>
-<body>
+
+<style>
+h1 { margin-bottom: 0}
+h2 { margin-bottom: 0; margin-top:20px }
+pre { background-color: #EEEEEE }
+tt { color: #1111CC; background-color: #EEEEFF}
+tt.es {color: #AA2200; background-color: #FFEEEE } 
+</style>
 
 <h1>CoojaTrace Reference</h1>
-<p>TODO</p>
+<p>
+CoojaTrace allows you to use observables (Signals and EventStreams) in your simulation for assertions and logging.
+</p>
 
-</body>
+
+
+<h2>Simulation and Motes</h2>
+
+<p>The Cooja simulation object:</p>
+<pre>sim</pre>
+
+<p>All motes in a map with mote ID as key:</p>
+<pre>sim.motes</pre> 
+
+<p>A specific mote:</p>
+<pre>sim.motes(5) // get mote with ID 5</pre> 
+
+<p>All motes in a list:</p>
+<pre>sim.motes.values</pre> 
+
+<p>Current Simulation time (in microseconds, not a signal):</p>
+<pre>sim.time</pre> 
+
+
+
+<h2>Signals</h2>
+<p>Transform a signal by applying a function to every value:</p>
+<pre>
+// multiply every value by 42
+signal.map(_ * 42)
+
+// turn every value c into a tuple by
+// calling c.name and c.address
+signal.map(c => (c.name, c.address) )
+</pre>
+
+<p>Turn an event stream into a signal:</p>
+<pre>stream.hold(initalValue)</pre>
+
+
+<p>Signal reflecting only distinct changes of original signal:</p>
+<pre>signal.distinct</pre>
+
+
+<p>Create a constant signal:</p>
+<pre>Val(value)</pre>
+
+
+<h2>EventStreams</h2>
+
+<p>Transform a stream by applying a function to every event:</p>
+<pre>
+// multiply every value by 42
+stream.map(_ * 42)
+
+// turn every event c into a tuple by
+// calling c.name and c.address
+stream.map(c => (c.name, c.address) )
+</pre> 
+
+<p>Turn a signal into an event stream of its changes:</p>
+<pre>signal.change</pre>
+
+<p>Filter an event stream with a predicate function:<br />
+(removes all elements where predicate evaluates to false)
+<pre>
+// Remove all elements where name == "timer"
+signal.filter(_.name != "timer")
+
+// Only keep events between 10 and 100
+signal.filter(e => (e > 10) &amp;&amp; (e &lt; 100))
+</pre>
+
+
+
+<h2>Simulation observables</h2>
+
+<p>Current simulation time in milliseconds: <tt>Signal[Long]</tt></p>
+<pre>sim.milliseconds</pre>
+
+<p>Simulation log messages: <tt class="es">EventStream[LogMessage]</tt></p>
+<pre>sim.log</pre>
+
+<p>Log message members:</p>
+<pre>
+logMessage.mote // Mote
+logMessage.message // String
+</pre>
+
+<p>Mote2Mote relations: <tt>SeqSignal[MoteRelation]</p>
+<pre>sim.moteRelations</pre>
+
+<p>Simulation radio medium:</p>
+<pre>sim.radioMedium</pre>
+
+<p>Active radio connections: <tt>SeqSignal[RadioConnection]</tt></p>
+<pre>sim.radioMedium.connections</pre>
+
+<p>Radio transmissions: <tt class="es">EventStream[RadioTransmission]</tt></p>
+<pre>sim.radioMedium.transmissions</pre>
+
+<p>RadioTransmission members:</p>
+<pre>
+transmission.startTime // Long
+transmission.endTime // Long
+transmission.source // Radio
+transmission.destinations // Set[Radio]
+transmission.interfered // Set[Radio]
+transmission.packet // RadioPacket
+transmission.sourceMote // Mote
+transmission.destinationMotes // Set[Mote]
+transmission.interferedMote // Set[Mote]
+transmission.interferedNonDestinations // Set[Mote]
+transmission.packetData // Array[Byte]
+transmission.packetString // String
+</pre>
+
+
+
+<h2>Mote observables</h2>
+TODO
+
+
+
+<h2>Assertions</h2>
+<p>Create an assertion (stops simulation when predicate is false):</p>
+<pre>
+assert(predicateStream, assertionName)
+assert(predicateSignal, assertionName)
+
+// stop when stream fires value below 10
+assert(stream.map(_ >= 10), "Stream value too low")
+
+// stop when signal value is empty string
+assert(signal != "", "signal string is empty")
+</pre>
+
+
+
+<h2>Logging</h2>
+<p>
+Log one or more signals to a log destination:<br />
+If <em>any</em> of the signals changes, all signal values will be logged.
+</p>
+<pre>
+log(destination, signal)
+log(destination, signal1, signal2, ...)
+</pre>
+
+<p>
+Log one event stream and optionally sample multiple signals when event is fired:<br />
+Signal changes will <em>not</em> be logged, they are <em>only</em> sampled when event stream fires.
+</p>
+<pre>
+log(destination, stream)
+log(destination, stream, signal1, signal2, ...)
+</pre>
+
+<p>Create a log window (destination):</p>
+<pre>
+// with time column and one column "Value"
+LogWindow(windowTitle)
+
+// with time column and column list
+LogWindow(windowTitle, List(columnName1, columnName2, ...))
+</pre>
+
+<p>Create a log file (destination):</p>
+<pre>
+// with time column and one column "Value"
+LogFile(fileName)
+
+// with time column and column list
+LogFile(fileName, List(columnName1, columnName2, ...))
+
+// without header
+LogFile(..., header=false)
+
+// with different column seperator (default: tab)
+LogFile(..., sep=newSeperatorString)
+</pre>
+
+<p>Create a log window (destination):</p>
+<pre>
+// with time column and one column "Value"
+LogTable(SQLiteDB(DBFileName), tableName)
+
+// with time column and column list
+LogTable(SQLiteDB(DBFileName), tableName,
+         List(columnName1, columnName2, ...))
+</pre>
+
+<p>Change log destination time column:</p>
+<pre>
+// change time column name
+Log...(..., timeColumn=newTimeColumnName)
+
+// do not log time
+Log...(..., timeColumn=null)
+</pre>
+
+
+
+<h2>Operators</h2>
+
+<p>Count events:</p>
+<pre>
+count(stream) // EventStream[Int]
+
+// same as count(signal.change)
+count(signal) // EventStream[Int]
+</pre>
+
+<p>Maximum:</p>
+<pre>
+max(stream) // EventStream[T]
+max(signal) // Signal[T]
+</pre>
+
+<p>Minimum:</p>
+<pre>
+min(stream) // EventStream[T]
+min(signal) // Signal[T]
+</pre>
+
+<p>Average:</p>
+<pre>
+avg(stream) // EventStream[T]
+avg(signal) // Signal[T]
+</pre>
+
+<p>Standard deviation:</p>
+<pre>
+stdDev(stream) // EventStream[T]
+stdDev(signal) // Signal[T]
+</pre>
+
+<p>Deltas stream:</p>
+<pre>
+delta(stream) // EventStream[T]
+delta(signal) // EventStream[T] !
+</pre>
+
+<p>
+Zip all given signals into a signal of a list of their values.<br />
+Order of values in list signal matches argument ordering.<br />
+A change in <em>any</em> of the source signals will change the list signal.
+</p>
+<pre>
+zip(signalA, signalB, signalC) // Signal[List[T]]
+</pre>
+
+<p>Create a tuple with position:</p>
+<pre>
+withPosition(stream) // EventStream[ (Int, T) ]
+</pre>
+
+<p>Create a tuple with time in microseconds:</p>
+<pre>
+withTime(stream) // EventStream[ (Long, T) ]
+</pre>
+
+<p>Create a tuple with time in microseconds:</p>
+<pre>
+withTime(stream) // EventStream[ (Long, T) ]
+</pre>
+
+<p>
+Apply a sliding position window, returns a stream of windows.<br />
+Each window is returned as a list of all corresponding values.<br />
+<em>range:</em> size of one window (number of values contained in one window)<br />
+<em>slide:</em> "space" between two windows (number of values between two window starts) <br />
+<em>offset:</em> number of values to wait before starting first window
+</p>
+<pre>
+posWindow(stream, range, slide, offset) // EventStream[List[T]]
+</pre>
+
+<p>
+Apply a sliding position window, returns a stream of windows.<br />
+Each window is returned as a list of all corresponding values.<br />
+<em>range:</em> size of one window (microseconds between first and last value in one window)<br />
+<em>slide:</em> "space" between two windows (microseconds between two window starts)<br />
+<em>offset:</em> time in microseconds to wait before starting first window
+</p>
+<pre>
+timeWindow(stream, range, slide, offset) // EventStream[List[T]]
+
+// variant: start time of next window is
+// not influenced by end time of last window:
+absoluteTimeWindow(stream, range, slide, offset)
+</pre>
+ 
+</pre>
+
 </html>
