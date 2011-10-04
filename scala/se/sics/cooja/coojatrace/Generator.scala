@@ -435,7 +435,7 @@ trait ColumnGeneratorComponent { this: GeneratorWindow =>
     ColumnGenerator("Mote Name", false, Nil,
                     (m, o) => "Val("+ m + ".toString)"),
     ColumnGenerator("Mote ID (static)", false, Nil,
-                    (m, o) => m + ".id"),
+                    (m, o) => "Val("+ m + ".id)"),
     ColumnGenerator("LED status", false, Nil,
                     (m, o) => m + ".led.status"),
     ColumnGenerator("Radio events", true, Nil,
