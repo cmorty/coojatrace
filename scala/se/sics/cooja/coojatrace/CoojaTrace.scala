@@ -87,7 +87,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     editorPane.setPage(referenceURL)
 
     add(new JScrollPane(editorPane))
-    setSize(300, 500)
+    setSize(600, 600)
     setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE)
     sim.getGUI.getDesktopPane.add(this)
   }
@@ -144,7 +144,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     buttonPanel.add(referenceButton)
     add(buttonPanel, BorderLayout.PAGE_END)
     add(new JScrollPane(scriptCode), BorderLayout.CENTER)
-    setSize(500,500)
+    setSize(600,400)
   
     // Propose to reload simulation when another classloader besides our own and cooja's is found
     val problem = sim.getMotes.exists { mote =>
