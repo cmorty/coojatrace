@@ -38,9 +38,13 @@ package object assertions {
 
         if(GUI.isVisualized) {
           // show dialog if visualized
-          javax.swing.JOptionPane.showMessageDialog(GUI.getTopParentContainer,
-            "The following assertion failed and stopped the simulation:\n\n" + name,
-            "Assertion failed", javax.swing.JOptionPane.INFORMATION_MESSAGE)
+          javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            def run() {
+              javax.swing.JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+                "The following assertion failed and stopped the simulation:\n\n" + name,
+                "Assertion failed", javax.swing.JOptionPane.INFORMATION_MESSAGE)
+            }
+          })          
         } else {
           // quit cooja if not visualized (code from LogScriptEngine plugin)
           new Thread() {
