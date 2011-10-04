@@ -87,7 +87,7 @@ signal.filter(e => (e > 10) &amp;&amp; (e &lt; 100))
 <h2>Simulation observables</h2>
 
 <p>Current simulation time in milliseconds: <tt>Signal[Long]</tt></p>
-<pre>sim.milliseconds</pre>
+<pre>sim.milliSeconds</pre>
 
 <p>Simulation log messages: <tt class="es">EventStream[LogMessage]</tt></p>
 <pre>sim.log</pre>
@@ -129,7 +129,141 @@ transmission.packetString // String
 
 
 <h2>Mote observables</h2>
-TODO
+
+<p>LED status: <tt>Signal[LEDStatus]</tt></p>
+<pre>mote.led.status</pre>
+
+<p>Radio events: <tt class="es">EventStream[RadioEvent]</tt></p>
+<pre>mote.radio.events</pre>
+
+<p>Radio interference status: <tt>Signal[Boolean]</tt></p>
+<pre>mote.radio.interfered</pre>
+
+<p>Radio receiver status: <tt>Signal[Boolean]</tt></p>
+<pre>mote.radio.receiverOn</pre>
+
+<p>Radio reception status: <tt>Signal[Boolean]</tt></p>
+<pre>mote.radio.receiving</pre>
+
+<p>Radio transmission status: <tt>Signal[Boolean]</tt></p>
+<pre>mote.radio.transmitting</pre>
+
+<p>Radio channel: <tt>Signal[Int]</tt></p>
+<pre>mote.radio.channel</pre>
+
+<p>Radio output power: <tt>Signal[Double]</tt></p>
+<pre>mote.radio.currentOutputPower</pre>
+
+<p>Radio output power indicator: <tt>Signal[Int]</tt></p>
+<pre>mote.radio.currentOutputPowerIndicator</pre>
+
+<p>Radio signal strength: <tt>Signal[Double]</tt></p>
+<pre>mote.radio.currentSignalStrength</pre>
+
+<p>Radio position: <tt>Signal[Position]</tt></p>
+<pre>mote.radio.position</pre>
+
+<p>Radio transmitted packets: <tt class="es">EventStream[RadioPacket]</tt></p>
+<pre>mote.radio.packetsTransmitted</pre>
+
+<p>Radio received packets: <tt class="es">EventStream[RadioPacket]</tt></p>
+<pre>mote.radio.packetsReceived</pre>
+
+<p>Radio transmissions: <tt class="es">EventStream[RadioTransmission]</tt></p>
+<pre>mote.radio.transmissions</pre>
+
+<p>Radio receptions: <tt class="es">EventStream[RadioTransmission]</tt></p>
+<pre>mote.radio.receptions</pre>
+
+<p>Log messages: <tt class="es">EventStream[String]</tt></p>
+<pre>mote.log.messages</pre>
+
+<p>Beeper status: <tt>Signal[Boolean]</tt></p>
+<pre>mote.beeper.beeping</pre>
+
+<p>Button status: <tt>Signal[Boolean]</tt></p>
+<pre>mote.button.pressed</pre>
+
+<p>IP address: <tt>Signal[String]</tt></p>
+<pre>mote.ipAddress.ipAddress</pre>
+
+<p>Rime address: <tt>Signal[String]</tt></p>
+<pre>mote.rimeAddress.address</pre>
+
+<p>Mote ID (dynamic): <tt>Signal[Int]</tt></p>
+<pre>mote.moteID.id</pre>
+
+<p>Mote position: <tt>Signal[Position]</tt></p>
+<pre>mote.position.position</pre>  
+
+<p>Mote attributes: <tt>Signal[Map[String, String]]</tt></p>
+<pre>mote.moteAttributes.attributes</pre>
+
+<p>Contiki process (name from .map file): <tt>Signal[Process]</tt></p>
+<pre>mote.currentProcess</pre>
+
+<p>Contiki process (name from memory): <tt>Signal[Process]</tt></p>
+<pre>mote.currentProcessDynamic</pre>
+
+<p>Stack Pointer: <tt>Signal[Int]</tt></p>
+<pre>mote.cpu.stackPointer</pre>
+
+<p>Register: <tt>Signal[Byte]</tt></p>
+<pre>mote.cpu.register(registerName)</pre>
+
+<p>Watchpoint (will not stop simulation, just fires name): <tt>EventStream[String]</tt></p>
+<pre>mote.watchpoint(sourceFileName, sourceLineNumber, watchPointName)</pre>
+
+<p>Memory variable (byte/char): <tt>Signal[Byte]</tt></p>
+<pre>
+mote.memory.variable(name, CByte)
+mote.memory.variable(address, CByte)
+</pre>
+
+<p>Memory variable (int): <tt>Signal[Int]</tt></p>
+<pre>
+mote.memory.variable(name, CInt)
+mote.memory.variable(address, CInt)
+</pre>
+
+<p>Memory variable (byte array): <tt>Signal[Array[Byte]]</tt></p>
+<pre>
+mote.memory.variable(name, CArray(length))
+mote.memory.variable(address, CArray(length))
+</pre>
+
+<p>Memory variable (pointer): <tt>Signal[Int]</tt></p>
+<pre>
+mote.memory.variable(name, CPointer)
+mote.memory.variable(address, CPointer)
+</pre>
+
+<p>Memory pointer:</p>
+<pre>
+// turn pointer variable into usable pointer
+// targetType: CInt, CByte, CPointer, CArray(...) of variable
+// this pointer points at
+ptr(pointerVar, targetType)
+
+// return pointer pointing at variable
+&amp;(variable)
+</pre>
+
+<p>Pointer arithmetics:</p>
+<pre>
+// pointer arithmetic (respects target type byte size)
+pointer + offset
+pointer - offset
+</pre>
+
+<p>Dereference pointer:</p>
+<pre>
+// dereference pointer using creation target type
+*(pointer)
+
+// dereference pointer and set target type (CInt, ...) explicitly
+*(pointer, targetType)
+</pre>
 
 
 
@@ -200,6 +334,14 @@ LogTable(SQLiteDB(DBFileName), tableName)
 LogTable(SQLiteDB(DBFileName), tableName,
          List(columnName1, columnName2, ...))
 </pre>
+
+<p>Log different streams/signals to one destination (column counts must match!)</p>
+<pre>
+val dest = Log...(...)
+log(dest, signal1, signal2)
+log(dest, signal3, signal4)
+log(dest, stream, signal5)
+</pre> 
 
 <p>Change log destination time column:</p>
 <pre>
