@@ -252,7 +252,7 @@ trait WithTimeOperator {
    * @return [[EventStream]] of (time, value) tuples
    * @tparam T type of eventstream
    */
-  def withTime[T](es: EventStream[T])(implicit sim: Simulation): EventStream[Tuple2[Long, T]] = {
+  def withTime[T](es: EventStream[T])(implicit sim: Simulation): EventStream[ (Long, T) ] = {
     es.map(e => (sim.getSimulationTime, e))
   }
 }
@@ -269,7 +269,7 @@ trait WithPositionOperator {
    * @return [[EventStream]] of (numer, value) tuples
    * @tparam T type of eventstream
    */
-  def withPosition[T](es: EventStream[T]):EventStream[Tuple2[Int, T]] = {
+  def withPosition[T](es: EventStream[T]):EventStream[ (Int, T) ] = {
     es.foldLeft((-1, null.asInstanceOf[T])) {
       case ( (count, last), event ) => (count+1, event)
     }
@@ -345,12 +345,12 @@ trait WindowOperator { this: WithPositionOperator with WithTimeOperator =>
     require(slide > 0)
 
     // check for start position
-    val start: (Tuple2[Int, T], Tuple2[Int, T]) => Boolean = {
+    val start: ( (Int, T), (Int, T) ) => Boolean = {
       case (_, (pos, _)) => (pos >= offset) && ((pos - offset) % slide == 0)
     }
 
     // check for end position
-    val end: (Tuple2[Int, T], Tuple2[Int, T]) => Boolean = {
+    val end: ( (Int, T), (Int, T) ) => Boolean = {
       case ((startpos, _), (pos, _)) => pos >= startpos + range
     }
 
@@ -368,7 +368,7 @@ trait WindowOperator { this: WithPositionOperator with WithTimeOperator =>
    * @param es [[EventStream]] over which to "slide"
    * @param range size of one window (microseconds between first and last value in one window)
    * @oaram slide "space" between two windows (microseconds between two windows) 
-   * @param offset time in microseconds wait before starting first window
+   * @param offset time in microseconds to wait before starting first window
    * @return [[EventStream]] of window lists
    * @tparam T type of eventstream
    */
@@ -378,13 +378,13 @@ trait WindowOperator { this: WithPositionOperator with WithTimeOperator =>
     require(slide > 0)
 
     // check for start time
-    val start: (Tuple2[Long, T], Tuple2[Long, T]) => Boolean = {
+    val start: ( (Long, T), (Long, T) ) => Boolean = {
       case ((lastTime, _), (time, _)) => (time - lastTime >= slide)
       case (null, (time, _)) => (time >= offset)
     }
 
     // check for end time
-    val end: (Tuple2[Long, T], Tuple2[Long, T]) => Boolean = {
+    val end: ( (Long, T), (Long, T) ) => Boolean = {
       case ((starttime, _), (time, _)) => time >= starttime + range
     }
 
@@ -403,7 +403,7 @@ trait WindowOperator { this: WithPositionOperator with WithTimeOperator =>
    * @param es [[EventStream]] over which to "slide"
    * @param range size of one window (microseconds between first and last value in one window)
    * @oaram slide "space" between two windows (microseconds between two windows) 
-   * @param offset time in microseconds wait before starting first window
+   * @param offset time in microseconds to wait before starting first window
    * @return [[EventStream]] of window lists
    * @tparam T type of eventstream
    */
@@ -413,14 +413,14 @@ trait WindowOperator { this: WithPositionOperator with WithTimeOperator =>
     require(slide > 0)
 
     // check for start time
-    val start: (Tuple2[Long, T], Tuple2[Long, T]) => Boolean = {
+    val start: ( (Long, T), (Long, T) ) => Boolean = {
       case ((lastTime, _), (time, _)) => 
         ((time-offset) / slide)*slide > ((lastTime-offset) / slide)*slide
       case (null, (time, _)) => (time >= offset)
     }
 
     // check for end time
-    val end: (Tuple2[Long, T], Tuple2[Long, T]) => Boolean = {
+    val end: ( (Long, T), (Long, T) ) => Boolean = {
       case ((starttime, _), (time, _)) => 
         time >= ((starttime-offset)/slide)*slide + offset + range
     }
