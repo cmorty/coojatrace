@@ -281,6 +281,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
       // success, change status
       logger.info("Script active")
       scriptButton.setText("Reset")
+      scriptCode.setEditable(false)
       active = true
     }
     else if(res == scala.tools.nsc.interpreter.Results.Incomplete) {
@@ -338,6 +339,9 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
 
     // reset button text
     scriptButton.setText("Activate")
+
+    // enable text field
+    scriptCode.setEditable(true)
 
     // save new status
     active = false
