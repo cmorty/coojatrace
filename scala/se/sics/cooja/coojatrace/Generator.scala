@@ -535,8 +535,24 @@ trait ColumnGeneratorComponent { this: GeneratorWindow =>
     override def setValueAt(value: Object, row: Int, col: Int) { col match {
       case 0 =>
         columns(row) = columns(row).copy(_1 = value.asInstanceOf[String])
-      case 2 => 
-        columns(row) = columns(row).copy(_4 = operatorGenerators.find(_.name == value.asInstanceOf[String]).get)
+      case 2 => {
+        val operator = operatorGenerators.find(_.name == value.asInstanceOf[String]).get
+        if(operator.alwaysEventStream && (columns(row) != columns.head) && (columns.head._2.eventStream || columns.head._4.alwaysEventStream)) {
+          // more than one eventstream cannot be logged, show error and do nothing
+          JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+            "You cannot use more than one event stream in a log rule.\n\n" +
+            "Using this operator turns this column into an event stream, which is already present.", 
+            "Event stream conflict", JOptionPane.WARNING_MESSAGE) 
+        } else {
+          columns(row) = columns(row).copy(_4 = operator)
+          if(operator.alwaysEventStream) {
+            columns.prepend(columns(row))
+            columns.remove(row+1)
+            fireTableRowsDeleted(row, row)
+            fireTableRowsInserted(0, 0)
+          } 
+        }
+      }
     }}
     override def isCellEditable(row: Int, col: Int) = (col != 1) 
   }
@@ -623,8 +639,13 @@ trait ColumnGeneratorComponent { this: GeneratorWindow =>
       val options = readOptions(columnOptionPanels(colType.name))
       val newCol = (colType.name, colType, options, noOperator)
       if(colType.eventStream) {
-        if(!columns.isEmpty && (columns.head._2.eventStream || columns.head._4.alwaysEventStream))
-          return // TODO: ERROR
+        if(!columns.isEmpty && (columns.head._2.eventStream || columns.head._4.alwaysEventStream)) {
+          // more than one eventstream cannot be logged, show error and do nothing
+          JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+            "You cannot use more than one event stream in a log rule.\n",
+            "Event stream conflict", JOptionPane.WARNING_MESSAGE) 
+          return
+        }
         columns.prepend(newCol)
         columnModel.fireTableRowsInserted(0, 0)
       } else {
