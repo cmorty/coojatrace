@@ -199,7 +199,8 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     val coojaLibs = classes.map(jarPathOfClass(_))
     val classloader = sim.getGUI.projectDirClassLoader.asInstanceOf[java.net.URLClassLoader]
     val dynamicLibs = classloader.getURLs.map(_.toString.replace("file:", "")).toList
-    settings.bootclasspath.value = (coojaLibs ::: dynamicLibs).mkString(":")
+    val classPath = coojaLibs ::: (dynamicLibs.filter(! _.endsWith("scala-compiler.jar")))
+    settings.bootclasspath.value = classPath.mkString(":")
     
     // create new scala interpreter with classpath and write output to System.out
     new IMain(settings, pwriter)
