@@ -1,8 +1,8 @@
 <html>
 
 <style>
-h1 { margin-bottom: 0}
-h2 { margin-bottom: 0; margin-top:20px }
+h1, h2, h3 { margin-bottom: 0}
+h2, h3 { margin-top:20px }
 pre { background-color: #EEEEEE }
 tt { color: #1111CC; background-color: #EEEEFF}
 tt.es {color: #AA2200; background-color: #FFEEEE } 
@@ -43,6 +43,9 @@ signal.map(_ * 42)
 // turn every value c into a tuple by
 // calling c.name and c.address
 signal.map(c => (c.name, c.address) )
+
+// alternative syntax
+for(c &lt;- signal) yield (c * 42)
 </pre>
 
 <p>Turn an event stream into a signal:</p>
@@ -57,12 +60,58 @@ signal.map(c => (c.name, c.address) )
 <pre>Val(value)</pre>
 
 
+<p>Execute a function/block of code for each change:</p>
+<pre>
+signal.foreach(function) // function receives new value as argument
+
+for(change &lt;- signal) {
+  // code (can access new value in variable change)
+}
+
+// run code if any signal changes
+for(c1 &lt;- signal1; c2 &lt;-signal2; ...) {
+  // code (can access new values in variables c1, c2, ...)
+}
+</pre>
+
+
+<p>Current value of a signal:</p>
+<pre>
+signal.now
+</pre>
+
+
+<h3>"Magic" signals:</h3>
+<p>
+To simplify your test code, you can treat a signal like its value and CoojaTrace will automatically map your expression to a mapped signal.<br />
+<em>Note:</em> There is a slight performance decrease, as your entire expression is re-evaluated at every change. So use the explicit .map(...) syntax for signals that change very often (i.e. stackpointers).
+</p>
+<pre>
+// works like stringSignal.map(_.length)
+stringSignal.length
+
+// works like listSignal.map(_.head)
+listSignal.head
+
+// works like
+// for(a &lt;- signalA; b &lt;- signalB; c &lt;- signalC) yield ((a+b)&lt;c)
+( (signalA + signalB) &lt; signalC )
+
+// works like Val(mote.toString)
+mote.toString
+</pre>
+
+
+
 <h2>EventStreams</h2>
 
 <p>Transform a stream by applying a function to every event:</p>
 <pre>
 // multiply every value by 42
 stream.map(_ * 42)
+
+// alternative syntax
+for(event &lt;- stream) yield (event * 42)
 
 // turn every event c into a tuple by
 // calling c.name and c.address
@@ -82,6 +131,19 @@ signal.filter(_.name != "timer")
 signal.filter(e => (e > 10) &amp;&amp; (e &lt; 100))
 </pre>
 
+<p>Execute a function/block of code for each event:</p>
+<pre>
+stream.foreach(function) // function receives new event as argument
+
+for(event &lt;- stream) {
+  // code (can access new event in variable event)
+}
+</pre>
+
+<p>Create new stream which fires events of original stream until predicate function return false:</p>
+<pre>
+stream.takeWhile(predicateFunction)
+</pre>
 
 
 <h2>Simulation observables</h2>
