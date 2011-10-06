@@ -174,7 +174,7 @@ trait DestinationGeneratorComponent { this: GeneratorWindow =>
     // SQLite table destination (if plugin is loaded)
     new DestinationGenerator("SQLite Table",
       Map("SQLite DB file" -> "coojatrace.db", "Table name" -> "log"),
-      (o, c) => "sqlitelog.LogTable(sqlitelog.SQLiteDB(\"" + o("SQLite DB file") + "\"), \"" + o("Table name") + "\", " + c.map("\"" + _ + "\" -> \"String\"").mkString("List(", ", ", ")") + ", timeColumn = " + o("Time column") + ")") {
+      (o, c) => "sqlitelog.LogTable(sqlitelog.SQLiteDB(\"" + o("SQLite DB file") + "\"), \"" + o("Table name") + "\", " + c.map("\"" + _ + "\"").mkString("List(", ", ", ")") + ", timeColumn = " + o("Time column") + ")") {
       override def available = { // only show if plugin is loaded
         try {
           Class.forName("se.sics.cooja.coojatrace.rules.logrules.sqlitelog.LogTable")
