@@ -388,8 +388,8 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     val startedPlugins = gui.getStartedPlugins
     val scriptRunner = gui.getPlugin("se.sics.cooja.plugins.ScriptRunner")
     if((scriptRunner != null) && (startedPlugins.indexOf(this) > startedPlugins.indexOf(scriptRunner))) {
-      logger.warn("")
-       JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+      logger.warn("CoojaTrace plugin will be initialized after the cooja test (script runner) plugin!")
+      JOptionPane.showMessageDialog(GUI.getTopParentContainer,
         "The CoojaTrace plugin will be initialized after the cooja test (script runner) plugin.\n\n" +
         "Running this simulation without GUI will start the simulation before the CoojaTrace plugin is initalized.\n" +
         "To fix this, close the cooja test (script runner) plugin, open it again and resave the simulation.\n" +
