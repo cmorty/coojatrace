@@ -58,7 +58,7 @@ package object assertions {
       // assertion violated
       if(c == false) {
         // log and stop
-        CoojaTracePlugin.forSim(sim).logger.info("ASSERTION: " + (if(name != null) name else cond) + " is " + c)
+        CoojaTracePlugin.forSim(sim).logger.info("ASSERTION: " + name + " is " + c)
         sim.stopSimulation() 
 
         if(GUI.isVisualized) {
