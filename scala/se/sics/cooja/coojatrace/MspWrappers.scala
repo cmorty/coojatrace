@@ -139,11 +139,11 @@ class MspMoteOnlyWrapper(mote: MspMote) {
   }
 
   /**
-   * Return a stracktrace for this mote.
+   * Return a stacktrace for this mote.
    *
    * @return stacktrace as output from MSP CLI
    */ 
-  def strackTrace = mote.getExecutionDetails
+  def stackTrace = mote.getExecutionDetails
 }
 
 
