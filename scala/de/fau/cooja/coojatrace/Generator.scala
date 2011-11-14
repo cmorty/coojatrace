@@ -23,7 +23,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package se.sics.cooja.coojatrace.generator
+package de.fau.cooja.coojatrace.generator
 
 
 
@@ -32,7 +32,7 @@ import java.awt.{List => _, _}
 import java.awt.event._
 
 import se.sics.cooja._
-import coojatrace._
+import de.fau.cooja.coojatrace._
 
 
 
@@ -202,7 +202,7 @@ trait DestinationGeneratorComponent { this: GeneratorWindow =>
       (o, c) => "sqlitelog.LogTable(sqlitelog.SQLiteDB(\"" + o("SQLite DB file") + "\"), \"" + o("Table name") + "\", " + c.map("\"" + _ + "\"").mkString("List(", ", ", ")") + ", timeColumn = " + o("Time column") + ")") {
       override def available = { // only show if plugin is loaded
         try {
-          Class.forName("se.sics.cooja.coojatrace.rules.logrules.sqlitelog.LogTable")
+          Class.forName("de.fau.cooja.coojatrace.rules.logrules.sqlitelog.LogTable")
           true
         } catch {
           case _ => false

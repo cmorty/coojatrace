@@ -23,7 +23,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package se.sics.cooja.coojatrace
+package de.fau.cooja.coojatrace
 
 
 

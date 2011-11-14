@@ -23,7 +23,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package se.sics.cooja.coojatrace
+package de.fau.cooja.coojatrace
 
 
 
@@ -34,7 +34,7 @@ import java.util.{Observable, Observer}
 import se.sics.cooja._
 import interfaces._
 
-import coojatrace._
+import de.fau.cooja.coojatrace._
 import interfacewrappers._
 import memorywrappers._
 
