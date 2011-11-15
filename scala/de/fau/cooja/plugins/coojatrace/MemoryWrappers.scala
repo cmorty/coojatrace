@@ -23,7 +23,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.fau.cooja.coojatrace
+package de.fau.cooja.plugins.coojatrace
 
 
 
@@ -34,7 +34,7 @@ import java.util.{Observable, Observer}
 import se.sics.cooja._
 import se.sics.cooja.interfaces._
 
-import de.fau.cooja.coojatrace.wrappers._
+import de.fau.cooja.plugins.coojatrace.wrappers._
 
 
 
@@ -123,7 +123,7 @@ case class CArray(length: Int, const: Boolean = false) extends MemVarType[Array[
  * Memory variable. Can be used as a signal.
  *
  * @param addr [[Signal]] for address of variable. Changes to address update value instantly
- * @param typ [[de.fau.cooja.coojatrace.memorywrappers.MemVarType]] of memory variable
+ * @param typ [[de.fau.cooja.plugins.coojatrace.memorywrappers.MemVarType]] of memory variable
  * @param mem mote memory in which variable is found
  * @tparam T scala type of memory variable
  */
@@ -157,7 +157,7 @@ case class MemVar[+T](addr: Signal[Int], typ: MemVarType[T], mem: RichMoteMemory
  * Pointer to memory variable. Can be used as a signal for variable address.
  *
  * @param addr [[Signal]] for address this pointer '''points at'''. '''Not address of pointer!'''
- * @param typ [[de.fau.cooja.coojatrace.memorywrappers.MemVarType]] of target variable
+ * @param typ [[de.fau.cooja.plugins.coojatrace.memorywrappers.MemVarType]] of target variable
  * @param mem mote memory in which target variable  is found
  * @tparam T scala type of target variable
  */

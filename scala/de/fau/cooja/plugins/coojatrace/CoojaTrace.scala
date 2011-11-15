@@ -23,7 +23,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.fau.cooja.coojatrace
+package de.fau.cooja.plugins.coojatrace
 
 
 
@@ -251,7 +251,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
       import se.sics.cooja._
       import interfaces._
       
-      import de.fau.cooja.coojatrace._
+      import de.fau.cooja.plugins.coojatrace._
       import wrappers._
       import interfacewrappers._
       import magicsignals._
@@ -292,7 +292,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     interpreter.interpret("""
       implicit val _simulation = sim
       implicit val _observing = new Observing {}
-      implicit val _dyndeplog = new de.fau.cooja.coojatrace.magicsignals.DynamicDepLogger
+      implicit val _dyndeplog = new de.fau.cooja.plugins.coojatrace.magicsignals.DynamicDepLogger
 
       Console.setOut(System.out)
     """)

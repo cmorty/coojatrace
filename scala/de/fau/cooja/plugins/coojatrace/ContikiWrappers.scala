@@ -23,15 +23,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.fau.cooja.coojatrace
+package de.fau.cooja.plugins.coojatrace
 
 
 
 import reactive._
 
 import se.sics.cooja._
-import de.fau.cooja.coojatrace.wrappers._
-import de.fau.cooja.coojatrace.memorywrappers._
+import de.fau.cooja.plugins.coojatrace.wrappers._
+import de.fau.cooja.plugins.coojatrace.memorywrappers._
 
 import se.sics.cooja.contikimote._
 import se.sics.cooja.interfaces._

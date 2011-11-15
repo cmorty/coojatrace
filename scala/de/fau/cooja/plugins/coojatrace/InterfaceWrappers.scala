@@ -23,14 +23,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.fau.cooja.coojatrace
+package de.fau.cooja.plugins.coojatrace
 
 
 
 import se.sics.cooja._
 import interfaces._
 
-import de.fau.cooja.coojatrace.wrappers._
+import de.fau.cooja.plugins.coojatrace.wrappers._
 
 import scala.collection.JavaConverters._
 

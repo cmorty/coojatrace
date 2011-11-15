@@ -23,7 +23,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.fau.cooja.coojatrace
+package de.fau.cooja.plugins.coojatrace
 
 
 
@@ -34,7 +34,7 @@ import java.util.{Observable, Observer}
 import se.sics.cooja._
 import interfaces._
 
-import de.fau.cooja.coojatrace._
+import de.fau.cooja.plugins.coojatrace._
 import interfacewrappers._
 import memorywrappers._
 
@@ -59,10 +59,45 @@ package wrappers {
  */
 class RichSimulation(val simulation: Simulation) extends RichObservable {
   /**
-   * Get all motes in the simulation in a map with their ID as keys.
+   * All motes in the simulation in a map with their ID as keys.
    * @return map with (id -> mote) elements
    */
-  def motes = simulation.getMotes().map(m => m.getID() -> m).toMap
+  def motes = simulation.getMotes.map(m => m.getID -> m).toMap
+
+  /**
+   * Stream of newly added simulation motes.
+   * @return EventStream of  added motes as (id -> mote) tuples
+   */
+  lazy val newMotes = {
+    val es = new EventSource[Mote]
+
+    val listener = new SimEventCentral.MoteCountListener {
+      def moteWasAdded(m: Mote) {
+        es fire m
+      }
+      def moteWasRemoved(m: Mote) {}
+    }
+
+    simulation.getEventCentral.addMoteCountListener(listener)
+
+    CoojaTracePlugin.forSim(simulation).onCleanUp {
+      simulation.getEventCentral.removeMoteCountListener(listener)
+    }
+
+    es
+  }
+
+  /**
+   * Utility function for using one for comprehension for both motes and newMotes.
+   * '''Usage:''' `sim.allMotes.foreach {...}` or `for((id, mote) <- sim.allMotes) {...}`
+   * @return object that can be used in a for comprehension or foreach call
+   */
+  def allMotes(implicit obs: Observing) = new {
+    def foreach(f: Mote => Unit) {
+      motes.values.foreach(f)
+      newMotes.foreach(f)
+    }
+  }
 
   /**
    * Simulation radiomedium.

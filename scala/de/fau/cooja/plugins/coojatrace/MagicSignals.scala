@@ -23,7 +23,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.fau.cooja.coojatrace
+package de.fau.cooja.plugins.coojatrace
 
 
 
@@ -53,8 +53,8 @@ package object magicsignals {
    * implemented for the value of a signal is called on the signal itself.
    *
    * @param f named parameter (function) which is to be turned into a signal
-   * @param deplog [[de.fau.cooja.coojatrace.magicsignals.DynDepLog]] which will be pointed 
-   *   to a new [[de.fau.cooja.coojatrace.magicsignals.DepLogger]]
+   * @param deplog [[de.fau.cooja.plugins.coojatrace.magicsignals.DynDepLog]] which will be pointed 
+   *   to a new [[de.fau.cooja.plugins.coojatrace.magicsignals.DepLogger]]
    * @return [[Signal]] created by reapplying f at every change of the dependency signals
    * @tparam T result type of f / type of newly created signal
    */
@@ -93,7 +93,7 @@ package object magicsignals {
    * implemented for the value of a signal is called on the signal itself.
    *
    * @param s [[Signal]] which is unwrapped
-   * @param deplog [[de.fau.cooja.coojatrace.magicsignals.DynDepLog]] which points to
+   * @param deplog [[de.fau.cooja.plugins.coojatrace.magicsignals.DynDepLog]] which points to
    *   the currently used [[DepLogger]]
    * @return current value of signal
    * @tparam T type of signal value
@@ -125,7 +125,7 @@ trait DepLogger {
 
 
 /**
- * Dynamic variable which points to the current [[de.fau.cooja.coojatrace.magicsignals.DepLogger]].
+ * Dynamic variable which points to the current [[de.fau.cooja.plugins.coojatrace.magicsignals.DepLogger]].
  */
 class DynamicDepLogger extends DynamicVariable[DepLogger](new DepLogger {
   def addDependency(s: Signal[_]) {} // no dependency tracking when simulating
