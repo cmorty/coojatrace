@@ -372,7 +372,7 @@ trait MotesGeneratorComponent { this: GeneratorWindow =>
    */
   def generateMote() = {
     if(allMotes.isSelected) {
-      ("mote", "for(mote <- sim.motes.values) {", true)
+      ("mote", "for(mote <- sim.allMotes) {", true)
     } else {
       val motes = motesInput.getText.split(",").map(_.trim.toInt)
       if(motes.size > 1) {
