@@ -105,6 +105,13 @@ package object magicsignals {
     // return current value
     s.now
   }
+
+  /**
+   * Wrap a signal for use of === operator.
+   * @param s Signal
+   * @return ComparableSignal
+   */
+  implicit def Signal2ComparableSignal[T](s: Signal[T]): ComparableSignal[T] = new ComparableSignal(s)
 }
 
 
@@ -130,5 +137,23 @@ trait DepLogger {
 class DynamicDepLogger extends DynamicVariable[DepLogger](new DepLogger {
   def addDependency(s: Signal[_]) {} // no dependency tracking when simulating
 })
+
+
+
+/**
+ * Wrapper for signal which implements === operator for value comparisons.
+ * 
+ * @param signal [[Signal]] to compare
+ * @tparam T type of signal value
+ */
+class ComparableSignal[T](signal: Signal[T]) {
+  /**
+   * Boolean signal which compares values of this and other specified signal. 
+   * @param other signal to compare this signal to
+   * @tparam X type of value of other signal
+   * @return Signal[Boolean] with result of value comparison
+   */ 
+  def ===[X](other: Signal[X]) = for(a <- signal; b <- other) yield (a == b)
+}
 
 } // package magicsignals

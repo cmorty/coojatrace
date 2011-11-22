@@ -109,6 +109,23 @@ mote.toString
 </pre>
 
 
+<h3>Checking equality:</h3>
+<p>
+Unlike all other comparison operators, the equals operator (==) is defined for all Scala objects, including signals.
+This means that comparing signals using == does <em>not</em> compare the signal <em>values</em>, but the signals themselves. To compare the values, use the === operator instead.
+</p>
+<pre>
+sig1 = Var(1)
+sig2 = Var(1)
+
+// does NOT compare signal values
+sig1 == sig2 // returns false
+
+// does compare signal values
+sig1 === sig2 // returns Signal[Boolean] (which is true so far)
+</pre>
+
+
 
 <h2>EventStreams</h2>
 
