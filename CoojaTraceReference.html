@@ -302,6 +302,9 @@ transmission.packetString // String
 <p>Register: <tt>Signal[Byte]</tt></p>
 <pre>mote.cpu.register(registerName)</pre>
 
+<p>CPU mode (active, lp0, lp1, lp2, lp3, lp4): <tt>Signal[String]</tt></p>
+<pre>mote.cpuMode</pre>
+
 <p>Watchpoint (will not stop simulation, just fires name): <tt>EventStream[String]</tt></p>
 <pre>mote.watchpoint(sourceFileName, sourceLineNumber, watchPointName)</pre>
 

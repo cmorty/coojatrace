@@ -139,12 +139,42 @@ class MspMoteOnlyWrapper(mote: MspMote) {
   }
 
   /**
+   * Signal of CPU (power) mode.
+   * Possible modes: "active", "lpm0" .. "lpm4"
+   *
+   * @return Signal[String] of mode
+   */
+  def cpuMode = {
+    // create result signal
+    val signal = Var(se.sics.mspsim.core.MSP430Constants.MODE_NAMES(mote.getCPU.getMode))
+
+    // create mode listener
+    val listener = new se.sics.mspsim.core.OperatingModeListener {
+      def modeChanged(source: se.sics.mspsim.core.Chip, newMode: Int) {
+        signal.update(se.sics.mspsim.core.MSP430Constants.MODE_NAMES(newMode)) 
+      }
+    }
+
+    // add mode listener
+    mote.getCPU.addOperatingModeListener(listener)
+
+    // remove watchpoint listener on plugin deactivation
+    CoojaTracePlugin.forSim(mote.getSimulation).onCleanUp {
+      mote.getCPU.removeOperatingModeListener(listener)
+    }
+
+    // return signal
+    signal
+  }
+
+  /**
    * Return a stacktrace for this mote.
    *
    * @return stacktrace as output from MSP CLI
    */ 
   def stackTrace = mote.getExecutionDetails
 }
+
 
 
 /**
