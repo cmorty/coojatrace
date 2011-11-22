@@ -148,12 +148,20 @@ class DynamicDepLogger extends DynamicVariable[DepLogger](new DepLogger {
  */
 class ComparableSignal[T](signal: Signal[T]) {
   /**
-   * Boolean signal which compares values of this and other specified signal. 
+   * Boolean signal which compares values of this and other specified signal for equality. 
    * @param other signal to compare this signal to
    * @tparam X type of value of other signal
-   * @return Signal[Boolean] with result of value comparison
+   * @return Signal[Boolean] which is true only if signal values are equal
    */ 
   def ===[X](other: Signal[X]) = for(a <- signal; b <- other) yield (a == b)
+
+  /**
+   * Boolean signal which compares values of this and other specified signal for inequality.
+   * @param other signal to compare this signal to
+   * @tparam X type of value of other signal
+   * @return Signal[Boolean] which is false only if signal values are equal 
+   */ 
+  def =!=[X](other: Signal[X]) = for(a <- signal; b <- other) yield (a == b)
 }
 
 } // package magicsignals
