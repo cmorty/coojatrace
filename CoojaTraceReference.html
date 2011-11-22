@@ -166,6 +166,21 @@ for(event &lt;- stream) {
 }
 </pre>
 
+<p>Extract multiple values from one event:<br />
+Can be given any number of functions, which are called with every event of the event stream. Their return values are fired as a List by the returned stream.<br />
+Order of given functions and function result values in fired lists is the same.<br />
+Useful for logging several attributes of complex events.
+</p>
+<pre>
+// extract three attributes of each RadioTransmission event
+// so that they can be logged as individual columns
+sim.radioMedium.transmissions.extract(
+  _.sourceMote,
+  _.destinationMotes.mkString(","),
+  _.packetString
+) // returns EventStream[List[Any]]
+</pre>
+
 <p>Create new stream which fires events of original stream until predicate function return false:</p>
 <pre>
 stream.takeWhile(predicateFunction)

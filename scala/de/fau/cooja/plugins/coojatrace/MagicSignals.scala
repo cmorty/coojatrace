@@ -107,11 +107,20 @@ package object magicsignals {
   }
 
   /**
-   * Wrap a signal for use of === operator.
+   * Wrap a Signal for use of === operator.
    * @param s Signal
+   * @tparam T type of signal value
    * @return ComparableSignal
    */
   implicit def Signal2ComparableSignal[T](s: Signal[T]): ComparableSignal[T] = new ComparableSignal(s)
+
+  /**
+   * Wrap an EventStream for use of extract method.
+   * @param es EventStream
+   * @tparam T type of events
+   * @return ExtractableES
+   */
+  implicit def EventStream2ExtractableES[T](es: EventStream[T]): ExtractableES[T] = new ExtractableES(es)
 }
 
 
@@ -141,7 +150,7 @@ class DynamicDepLogger extends DynamicVariable[DepLogger](new DepLogger {
 
 
 /**
- * Wrapper for signal which implements === operator for value comparisons.
+ * Wrapper for Signals which implements === operator for value comparisons.
  * 
  * @param signal [[Signal]] to compare
  * @tparam T type of signal value
@@ -162,6 +171,31 @@ class ComparableSignal[T](signal: Signal[T]) {
    * @return Signal[Boolean] which is false only if signal values are equal 
    */ 
   def =!=[X](other: Signal[X]) = for(a <- signal; b <- other) yield (a == b)
+}
+
+
+
+// This isn't a MagicSignal...  Maybe this should be placed into an own package 
+// or the magicsignals package should be renamed into something like MagicFRP
+/**
+ * Wrapper for EventStreams which implements extract method.
+ *
+ * @param eventStream [[EventStream]] to extract
+ * @tparam T type of events
+ */
+class ExtractableES[T](eventStream: EventStream[T]) {
+  /**
+   * Extracts information from events fired by this stream in a new EventStream.
+   * Can be given any number of functions, which are called with every event of the original
+   * event stream. Their return values are fired as a List by the returned EventStream.
+   * Order of extract parameter functions and function result values in fired lists is the same.
+   * @param fun functions which transform an event (value)
+   * @return EventStream[List[Any]] which has the list of function results as events
+   */
+  def extract(fun: (T => Any)*) = {
+    val funList = fun.toList
+    eventStream.map(e => funList.map(f => f(e))) 
+  }
 }
 
 } // package magicsignals
