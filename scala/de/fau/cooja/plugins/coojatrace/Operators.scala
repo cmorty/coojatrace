@@ -44,6 +44,7 @@ package object operators extends
   operators.MinimumOperator with
   operators.DeltaOperator with
   operators.ZipOperator with
+  operators.TimeSumOperator with
   operators.WithTimeOperator with
   operators.WithPositionOperator with
   operators.WindowOperator
@@ -72,8 +73,7 @@ trait CountOperator {
    * @return [[Signal]] of change count, starts at 0 before first change
    * @tparam T type of signal (works with all types)
    */
-  def count[T](sig: Signal[T]): Signal[Int] = count(sig.change)
-  
+  def count[T](sig: Signal[T]): Signal[Int] = count(sig.change)  
 }
 
 
@@ -263,6 +263,35 @@ trait ZipOperator {
       case (combined, signal) => signal.flatMap(s => combined.map(v => s :: v))
     }
   }
+}
+
+
+
+
+/**
+ * Time sum operator state class.
+ * @param last time of last change to ``true``
+ * @param sum sum of times where signal was ``true`` so far
+ */
+private case class TimeSumState(last: Long, sum: Long)
+
+/**
+ * Time sum operator.
+ */
+trait TimeSumOperator {
+  /**
+   * Sums all time durations (in microseconds), during which the given boolean signal is ``true``.
+   * @param sig [[Signal]] of which time durations are summed
+   * @return [[Signal]] of duration sig was ``true`` in microseconds
+   */
+  def timeSum(sig: Signal[Boolean])(implicit sim: Simulation): Signal[Long] = 
+    sig.distinct.change.foldLeft(TimeSumState(0, 0)){ // fold over all disting changes
+      case (TimeSumState(last, sum), true) => // change to true, save this time
+        TimeSumState(sim.getSimulationTime, sum)
+      
+      case (TimeSumState(last, sum), false) => // change to false, increase sum
+        TimeSumState(sim.getSimulationTime, sum + (sim.getSimulationTime - last))  
+    }.map(_.sum).hold(0) // get sum and turn it into a signal
 }
 
 

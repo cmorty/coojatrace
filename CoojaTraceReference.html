@@ -497,6 +497,13 @@ A change in <em>any</em> of the source signals will change the list signal.
 zip(signalA, signalB, signalC) // Signal[List[T]]
 </pre>
 
+<p>
+Sums all time durations (in microseconds), during which the given boolean signal is <em>true</em>.
+</p>
+<pre>
+timeSum(booleanSignal)) // Signal[Long]
+</pre>
+
 <p>Create a tuple with position:</p>
 <pre>
 withPosition(stream) // EventStream[ (Int, T) ]
