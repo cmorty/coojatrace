@@ -217,11 +217,11 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     
     // external classes not loaded by plugins
     val classes = scala.List(
-      "org.apache.log4j.Logger", "org.jdom.Element"
+      "org.apache.log4j.Logger", "org.jdom.Element", "se.sics.cooja.GUI"
     )
     
     // assemble JAR path
-    val coojaLibs = classes.map(jarPathOfClass(_))
+    val coojaLibs = classes.map(jarPathOfClass)
     val classloader = sim.getGUI.projectDirClassLoader.asInstanceOf[java.net.URLClassLoader]
     val dynamicLibs = classloader.getURLs.map(_.toString.replace("file:", "")).toList
     val classPath = coojaLibs ::: (dynamicLibs.filter(! _.endsWith("scala-compiler.jar")))
