@@ -221,30 +221,50 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
    * @param addr variable address
    * @oaram updateFun function which returns variable value at given address,
    *   called at every change
-   * @oaram convFun function which converts new value from Int to correct type
+   * @param size (optional) size of variable in bytes, neccessary to update on writes
+   *  on parts of multi-byte variables
    * @return [[Signal]] of variable value
    * @tparam T type of variable / result type of updateFun
    */
-  private def memVar[T](addr: Int, updateFun: Int => T, convFun: Int => T): Signal[T] = {
+  private def memVar[T](addr: Int, updateFun: Int => T, size: Int = 1): Signal[T] = {
     // create new signal, get inital value by evaluating updateFun
     val v = Var[T](updateFun(addr))
     
-    // add CPU breakpoint/monitor for variable address
-    mote.getCPU.setBreakPoint(addr, new se.sics.mspsim.core.CPUMonitor() {
+    // monitor for variable addresses
+    val cpuMonitor = new se.sics.mspsim.core.CPUMonitor() {
       def cpuAction(t: Int, adr: Int, data: Int) {
         // ignore everything except writes
         if(t != se.sics.mspsim.core.CPUMonitor.MEMORY_WRITE) return
 
-        // update signal
         // NOTE: this method is called _before_ the actual memory is changed,
-        // so we need to take the new value from data and pass it to updateFun
-        v.update(convFun(data))
+        // so we need to wait until the memory write is completed before reading the memory
+        // a program counter monitor is used for this, as this should be incremented next
+        // this slightly increases the time at which the change is registered
+        val regPC = se.sics.mspsim.core.MSP430Constants.REGISTER_NAMES.indexOf("PC")
+        mote.getCPU.setRegisterWriteMonitor(regPC, new se.sics.mspsim.core.CPUMonitor() {
+          // store previous PC monitor
+          val prevMonitor = mote.getCPU.regWriteMonitors(regPC)
+          def cpuAction(t: Int, adr: Int, data: Int) {
+            // update signal
+            v.update(updateFun(addr))
+
+            // call previous PC monitor, if any
+            if(prevMonitor != null) prevMonitor.cpuAction(t, addr, data)
+
+            // restore previous PC monitor
+            mote.getCPU.setRegisterWriteMonitor(regPC, prevMonitor)
+          }
+        })
       }
-    })
+    }
+
+    // add CPU breakpoint/monior for all addresses
+    for(a <- addr until addr+size) mote.getCPU.setBreakPoint(a, cpuMonitor)
 
     // remove breakpoint on plugin deactivation
     CoojaTracePlugin.forSim(mote.getSimulation).onCleanUp {
-      mote.getCPU.setBreakPoint(addr, null)
+      for(a <- addr until addr+size) mote.getCPU.setBreakPoint(a, null)
+      // TODO: remove remaining PC monitors? (very unlikely to be left)
     }
     
     // return signal
@@ -262,14 +282,14 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
   override def array(addr: Int, length: Int) = memory.getMemorySegment(addr, length)
 
 
-  def addIntVar(addr: Int) = memVar(addr, int, _.toInt)
-  def addByteVar(addr: Int) = memVar(addr, byte, _.toByte)
-  def addPointerVar(addr: Int) = memVar(addr, pointer, _.toInt)
+  def addIntVar(addr: Int) = memVar(addr, int, 2)
+  def addByteVar(addr: Int) = memVar(addr, byte, 1)
+  def addPointerVar(addr: Int) = memVar(addr, pointer, 2)
+
   def addArrayVar(addr: Int, length: Int, const: Boolean) = if(const == true) {
-    memVar(addr, array(_: Int, length), _ => array(addr, length))
+    memVar(addr, _ => array(addr, length), 1)
   } else {
-    val elements = (addr until addr+length) map (a => memVar(a, byte, _.toByte))
-    operators.zip(elements:_*).map(_.toArray)
+    memVar(addr, _ => array(addr, length), length)
   }
 }
 
