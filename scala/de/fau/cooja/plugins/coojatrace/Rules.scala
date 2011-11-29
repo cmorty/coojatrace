@@ -38,6 +38,7 @@ import java.util.{Observer, Observable}
 import se.sics.cooja._
 
 
+class Rules{}
 
 package rules {
 

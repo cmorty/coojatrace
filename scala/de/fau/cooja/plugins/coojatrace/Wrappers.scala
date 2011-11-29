@@ -38,6 +38,7 @@ import de.fau.cooja.plugins.coojatrace._
 import interfacewrappers._
 import memorywrappers._
 
+class Wrappers{}
 
 
 /**

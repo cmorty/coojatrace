@@ -35,6 +35,8 @@ import de.fau.cooja.plugins.coojatrace.wrappers._
 import scala.collection.JavaConverters._
 
 
+class InterfaceWrappers{}
+
 
 /**
  * Implicit conversions from original cooja mote interfaces to their rich wrappers.

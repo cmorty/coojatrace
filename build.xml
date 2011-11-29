@@ -23,7 +23,8 @@
     <mkdir dir="build"/>
     <scalac srcdir="scala" destdir="build" deprecation="yes" unchecked="yes" addparams="-Yclosure-elim -optimise">
       <classpath>
-        <pathelement location="${cooja}/dist/cooja.jar"/>
+		<pathelement location="build"/>
+		<pathelement location="${cooja}/dist/cooja.jar"/>
       	<pathelement location="${cooja}/dist/lib/jdom.jar"/>
         <pathelement location="${cooja}/dist/lib/log4j.jar"/>
       	<pathelement location="${cooja}/apps/mspsim/lib/mspsim.jar"/>

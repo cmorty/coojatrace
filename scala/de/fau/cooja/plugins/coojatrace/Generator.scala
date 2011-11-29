@@ -23,7 +23,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.fau.cooja.plugins.coojatrace.generator
+
+package de.fau.cooja.plugins.coojatrace 
+class Generator{}
+
 
 
 
@@ -35,6 +38,8 @@ import se.sics.cooja._
 import de.fau.cooja.plugins.coojatrace._
 
 
+
+package generator {
 
 /**
  * Script code generator (window).
@@ -750,4 +755,5 @@ trait ColumnGeneratorComponent { this: GeneratorWindow =>
       case tf: JTextField => tf.setText("")
     }
   }
+}
 }
