@@ -37,7 +37,11 @@ import se.sics.cooja.interfaces._
 import de.fau.cooja.plugins.coojatrace.wrappers._
 
 
-class MemoryWrappers{}
+
+// speed up compilation
+class MemoryWrappers
+
+
 
 /**
  * Wrappers for accessing mote memory variables.

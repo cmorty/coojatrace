@@ -35,7 +35,10 @@ import de.fau.cooja.plugins.coojatrace.wrappers._
 import scala.collection.JavaConverters._
 
 
-class InterfaceWrappers{}
+
+// speed up compilation
+class InterfaceWrappers
+
 
 
 /**

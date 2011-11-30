@@ -31,7 +31,12 @@ import reactive._
 
 import se.sics.cooja._
 
-class Operators{}
+
+
+// speed up compilation
+class Operators
+
+
 
 /**
  * Operators to consolidate data while running the simulation.

@@ -30,7 +30,11 @@ package de.fau.cooja.plugins.coojatrace
 import reactive._
 import scala.util.DynamicVariable
 
-class MagicSignals{}
+
+
+// speed up compilation
+class MagicSignals
+
 
 
 /**

@@ -47,7 +47,11 @@ import mspwrappers._
 import generator._
 
 
-class CoojaTrace{}
+
+// speed up compilation
+class CoojaTrace
+
+
 
 /**
  * 

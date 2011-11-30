@@ -36,7 +36,11 @@ import de.fau.cooja.plugins.coojatrace.memorywrappers._
 import se.sics.cooja.mspmote._ 
 
 
-class MspWrappers{}
+
+// speed up compilation
+class MspWrappers
+
+
 
 /**
  * MSP mote wrappers.

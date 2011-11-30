@@ -25,8 +25,6 @@
 
 
 package de.fau.cooja.plugins.coojatrace 
-class Generator{}
-
 
 
 
@@ -36,6 +34,11 @@ import java.awt.event._
 
 import se.sics.cooja._
 import de.fau.cooja.plugins.coojatrace._
+
+
+
+// speed up compilation
+class Generator
 
 
 

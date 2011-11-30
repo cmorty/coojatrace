@@ -36,7 +36,11 @@ import de.fau.cooja.plugins.coojatrace.memorywrappers._
 import se.sics.cooja.contikimote._
 import se.sics.cooja.interfaces._
 
-class ContikiWrappers{}
+
+
+// speed up compilation
+class ContikiWrappers
+
 
 
 /**
