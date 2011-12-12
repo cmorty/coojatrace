@@ -1,4 +1,4 @@
-Source: cooja-gdbstub
+Source: cooja-coojatrace
 Section: net
 Priority: extra
 Maintainer: Moritz 'Morty' Strübe <morty@cs.fau.de>
@@ -14,13 +14,14 @@ Homepage: http://i4git.informatik.uni-erlangen.de/contiki_projects.git/shortlog/
 Vcs-Git: git://i4git.informatik.uni-erlangen.de/contiki_projects.git
 Vcs-Browser: http://i4git.informatik.uni-erlangen.de/contiki_projects.git/shortlog/refs/heads/gdbstub
 
-Package: cooja-gdbstub
+Package: cooja-coojatrace
 Architecture: all
 Depends:
  cooja,
  cooja-mspsim,
  ${misc:Depends},	
-Description: GDBStub for the Cooja Simulator
- Allows to connect to a msp-based mote using gdb
+Recommends:
+ coojatracesqlite
+Description: Tracing framework
 
 
