@@ -29,9 +29,9 @@ CoojaTrace allows you to use observables (Signals and EventStreams) in your simu
 <p>All motes in a list:</p>
 <pre>sim.motes.values</pre> 
 
-<p>Run code for all current motes and all motes <strong>added in the future</strong>:</p>
+<p>Run code for all current motes and all motes <strong>added during simulation</strong>:</p>
 <pre>
-for(mote &lt; sim.allMotes) {
+for(mote &lt;- sim.allMotes) {
   // code (for example log/assert calls)
 }
 </pre> 
@@ -204,7 +204,7 @@ logMessage.message // String
 <p>Newly added motes: <tt class="es">EventStream[Mote]</tt></p>
 <pre>sim.newMotes</pre>
 
-<p>Mote2Mote relations: <tt>SeqSignal[MoteRelation]</p>
+<p>Mote2Mote relations: <tt>SeqSignal[MoteRelation]</tt></p>
 <pre>sim.moteRelations</pre>
 
 <p>Simulation radio medium:</p>
