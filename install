@@ -1,2 +1,3 @@
 cooja.config	/usr/share/cooja/apps/coojatrace
+CoojaTraceReference.html /usr/share/cooja/apps/coojatrace
 lib/*			/usr/share/cooja/apps/coojatrace
