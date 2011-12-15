@@ -129,9 +129,12 @@ package object logrules {
     val stream = signals.tail.foldLeft(signals.head.map(v => List(v.toString))) {
       case (combined, signal) => signal.flatMap(s => combined.map(v => s.toString :: v))
     }.change
-
+    
+    //Only log if there is really a change
+    val distinctstream = stream.distinct
+    
     // call dest.log for every change with a list of current values (as long as to is active)
-    stream.takeWhile(_ => to.active).foreach(to.log)
+    distinctstream.takeWhile(_ => to.active).foreach(to.log)
   }
 
   /**
