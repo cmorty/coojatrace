@@ -81,6 +81,7 @@ package mspwrappers {
 class MspRichMote(mote: MspMote) extends RichMote(mote) {
   override lazy val memory = new MspMoteRichMemory(mote)
   override lazy val cpu = new MspMoteRichCPU(mote)
+
 }
 
 
@@ -171,6 +172,9 @@ class MspMoteOnlyWrapper(mote: MspMote) {
     signal
   }
 
+  
+   def mspMote: MspMote = mote
+  
   /**
    * Return a stacktrace for this mote.
    *
