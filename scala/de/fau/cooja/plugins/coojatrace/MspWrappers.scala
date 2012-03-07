@@ -249,29 +249,24 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
         // a program counter monitor is used for this, as this should be incremented next
         // this slightly increases the time at which the change is registered
         val regPC = se.sics.mspsim.core.MSP430Constants.REGISTER_NAMES.indexOf("PC")
-        mote.getCPU.setRegisterWriteMonitor(regPC, new se.sics.mspsim.core.CPUMonitor() {
-          // store previous PC monitor
-          val prevMonitor = mote.getCPU.regWriteMonitors(regPC)
+        mote.getCPU.addRegisterWriteMonitor(regPC, new se.sics.mspsim.core.CPUMonitor() {
+          //
           def cpuAction(t: Int, adr: Int, data: Int) {
             // update signal
             v.update(updateFun(addr))
-
-            // call previous PC monitor, if any
-            if(prevMonitor != null) prevMonitor.cpuAction(t, addr, data)
-
             // restore previous PC monitor
-            mote.getCPU.setRegisterWriteMonitor(regPC, prevMonitor)
+            mote.getCPU.removeRegisterWriteMonitor(regPC, this)
           }
         })
       }
     }
 
     // add CPU breakpoint/monior for all addresses
-    for(a <- addr until addr+size) mote.getCPU.setBreakPoint(a, cpuMonitor)
+    for(a <- addr until addr+size) mote.getCPU.addWatchPoint(a, cpuMonitor)
 
     // remove breakpoint on plugin deactivation
     CoojaTracePlugin.forSim(mote.getSimulation).onCleanUp {
-      for(a <- addr until addr+size) mote.getCPU.setBreakPoint(a, null)
+      for(a <- addr until addr+size) mote.getCPU.removeWatchPoint(a, cpuMonitor)
       // TODO: remove remaining PC monitors? (very unlikely to be left)
     }
     
