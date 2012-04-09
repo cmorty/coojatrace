@@ -33,7 +33,10 @@ import se.sics.cooja._
 import de.fau.cooja.plugins.coojatrace.wrappers._
 import de.fau.cooja.plugins.coojatrace.memorywrappers._
 
+import se.sics.mspsim.core.CPUMonitor
+
 import se.sics.cooja.mspmote._ 
+import java.io.File
 
 
 
@@ -105,38 +108,34 @@ class MspMoteOnlyWrapper(mote: MspMote) {
     val file = mote.getSimulation.getGUI.restorePortablePath(new java.io.File(filename))
 
     // calculate executable address from file and line
-    val addr = mote.getBreakpointsContainer.getExecutableAddressOf(file, line)
+    val addr = mote.getExecutableAddressOf(file, line)
 
     // generate name if not set
     val breakname = if(name != null) null else filename + ":" + line
 
     // add breakpoint which does not stop simulation
-    val bp = mote.getBreakpointsContainer.addBreakpoint(file, line, addr)
+    val bp = mote.addBreakpoint(file, line, addr)
     bp.setStopsSimulation(false)
 
     // create result eventstream
     val es = new EventSource[String]
 
     // create watchpoint listener
-    val listener = new java.awt.event.ActionListener {
-      def actionPerformed(e: java.awt.event.ActionEvent) {
-        // get last breakpoint
-        val bp = mote.getLastWatchpoint.asInstanceOf[mspmote.plugins.MspBreakpoint]
+    val monitor = new CPUMonitor {
 
-        // check if last checkpoint is "ours"
-        if(bp.getExecutableAddress == addr) {
-          // yes, fire event
-          es fire name
-        }
-      }
+      def cpuAction(typ: Int , addr: Int ,data: Int ) {
+			es fire name
+		}
+      
     }
 
     // add watchpoint listener
-    mote.addWatchpointListener(listener)
+    val ffile = new File(filename)
+    mote.getCPU.addWatchPoint(mote.getExecutableAddressOf(ffile, line), monitor)
 
     // remove watchpoint listener on plugin deactivation
     CoojaTracePlugin.forSim(mote.getSimulation).onCleanUp {
-      mote.removeWatchpointListener(listener)
+      mote.getCPU.removeWatchPoint(mote.getExecutableAddressOf(ffile, line), monitor)
     }
 
     // return eventstream
@@ -239,17 +238,17 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
     val v = Var[T](updateFun(addr))
     
     // monitor for variable addresses
-    val cpuMonitor = new se.sics.mspsim.core.CPUMonitor() {
+    val cpuMonitor = new CPUMonitor() {
       def cpuAction(t: Int, adr: Int, data: Int) {
         // ignore everything except writes
-        if(t != se.sics.mspsim.core.CPUMonitor.MEMORY_WRITE) return
+        if(t != CPUMonitor.MEMORY_WRITE) return
 
         // NOTE: this method is called _before_ the actual memory is changed,
         // so we need to wait until the memory write is completed before reading the memory
         // a program counter monitor is used for this, as this should be incremented next
         // this slightly increases the time at which the change is registered
         val regPC = se.sics.mspsim.core.MSP430Constants.REGISTER_NAMES.indexOf("PC")
-        mote.getCPU.addRegisterWriteMonitor(regPC, new se.sics.mspsim.core.CPUMonitor() {
+        mote.getCPU.addRegisterWriteMonitor(regPC, new CPUMonitor() {
           //
           def cpuAction(t: Int, adr: Int, data: Int) {
             // update signal
