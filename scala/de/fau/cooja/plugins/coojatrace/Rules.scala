@@ -224,6 +224,21 @@ case class LogFile(file: String, columns: List[String] = List("Value"), timeColu
     active = false
   }
 
+    //Use actor to write to file
+  import scala.actors._
+  object writer extends Actor {
+    def act() {
+      loopWhile(active){
+        react {
+          case str:String => {stream println str}
+          case _ => {println("Something went wrong here!")}
+        }
+      }
+    }
+  }
+  
+  writer.start()
+  
   // add observer to Simulation which flushes log buffers when sim is stopped
   sim.addObserver(new Observer() {
     def update(obs: Observable, obj: Object) {
@@ -237,7 +252,7 @@ case class LogFile(file: String, columns: List[String] = List("Value"), timeColu
   def log(values: List[_]) {
     // join values (and time if enabled) with seperator and print 
     val out = if(timeColumn != null) (sim.getSimulationTime :: values) else values
-    stream println out.mkString(sep)
+    writer ! out.mkString(sep)
   }
 }
 
