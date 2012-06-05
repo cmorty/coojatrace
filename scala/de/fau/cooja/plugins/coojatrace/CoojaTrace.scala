@@ -205,6 +205,8 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     import scala.tools.nsc._
     import scala.tools.nsc.interpreter._
     
+    GUI.setProgressMessage("Compiling Scala"); 
+    
     val settings = new Settings()
     
     /**
