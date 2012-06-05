@@ -29,6 +29,7 @@ package de.fau.cooja.plugins.coojatrace
 
 import reactive._
 import scala.util.DynamicVariable
+import se.sics.cooja.motes.AbstractEmulatedMote
 
 
 
@@ -79,7 +80,11 @@ package object magicsignals {
     if(deps.isEmpty) {
       // no dependencies found? return a Val but warn as well
       val logger = org.apache.log4j.Logger.getLogger(this.getClass)
-      logger.warn("no dependencies found when wrapping value " + f + ", creating Val instead")
+      //Do not warn for strings or mote names.
+      if(! (f.isInstanceOf[String] || f.isInstanceOf[AbstractEmulatedMote])){
+        logger.warn("no dependencies found when wrapping value " + f + ":" + f.getClass() +", creating Val instead")
+      }
+      
       Val(f)
     } else {
       // flatmap all dependency signals into one new signal, whose value is computed
