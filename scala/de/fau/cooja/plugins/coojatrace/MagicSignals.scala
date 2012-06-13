@@ -180,7 +180,7 @@ class ComparableSignal[T](signal: Signal[T]) {
    * @tparam X type of value of other signal
    * @return Signal[Boolean] which is false only if signal values are equal 
    */ 
-  def =!=[X](other: Signal[X]) = for(a <- signal; b <- other) yield (a == b)
+  def =!=[X](other: Signal[X]) = for(a <- signal; b <- other) yield (a != b)
 }
 
 
