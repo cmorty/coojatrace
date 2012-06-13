@@ -280,24 +280,51 @@ trait ZipOperator {
  */
 private case class TimeSumState(last: Long, sum: Long)
 
-/**
- * Time sum operator.
- */
-trait TimeSumOperator {
   /**
-   * Sums all time durations (in microseconds), during which the given boolean signal is ``true``.
-   * @param sig [[Signal]] of which time durations are summed
-   * @return [[Signal]] of duration sig was ``true`` in microseconds
+   * Time sum operator.
    */
-  def timeSum(sig: Signal[Boolean])(implicit sim: Simulation): Signal[Long] = 
-    sig.distinct.change.foldLeft(TimeSumState(0, 0)){ // fold over all disting changes
-      case (TimeSumState(last, sum), true) => // change to true, save this time
-        TimeSumState(sim.getSimulationTime, sum)
+  trait TimeSumOperator {
+    /**
+     * Sums all time durations (in microseconds), during which the given boolean signal is ``true``.
+     * If first transition is ``true`` -&gt; ``false`` the starting time is the simulation time when compiling.
+     * @param sig [[Signal]] of which time durations are summed
+     * @return [[Signal]] of duration sig was ``true`` in microseconds
+     */
+    def timeSum(sig: Signal[Boolean])(implicit sim: Simulation): Signal[Long] = timeSum(sig, 0)
+
+    /**
+     * Sums all time durations (in microseconds), during which the given boolean signal is ``true``.
+     * If first transition is ``true`` -&gt; ``false`` the starting time is passed as startTime.
+     * @param sig [[Signal]] of which time durations are summed
+     * @param startTime [[Long]] when to start counting  time (microseconds)
+     * @return [[Signal]] of duration sig was ``true`` in microseconds
+     */
+
+    def timeSum(sig: Signal[Boolean], startTime: Long)(implicit sim: Simulation): Signal[Long] =
+      sig.distinct.change.foldLeft(TimeSumState(startTime, 0)) { // fold over all distinct changes
+        case (TimeSumState(last, sum), true) => // change to true, save this time
+          TimeSumState(sim.getSimulationTime, sum)
+        case (TimeSumState(last, sum), false) => // change to false, increase sum
+          TimeSumState(0, sum + (sim.getSimulationTime - last))
+      }.map(_.sum).hold(0) // get sum and turn it into a signal
+
       
-      case (TimeSumState(last, sum), false) => // change to false, increase sum
-        TimeSumState(sim.getSimulationTime, sum + (sim.getSimulationTime - last))  
-    }.map(_.sum).hold(0) // get sum and turn it into a signal
-}
+      
+    /**
+     * Sums all time durations (in microseconds), during which the given boolean signal is ``true``.
+     * If first transition is ``true`` -&gt; ``false`` the starting time is either the motes start
+     * time or the time of compilation. What ever comes last.
+     * @param sig [[Signal]] of which time durations are summed
+     * @param startTime [[Long]] when to start counting  time (microseconds)
+     * @return [[Signal]] of duration sig was ``true`` in microseconds
+     */
+      
+    def timeSum(sig: Signal[Boolean], mote: Mote)(implicit sim: Simulation): Signal[Long] = {
+        def max(x: Long, y: Long): Long = if (x < y) y else x
+        val start = max(mote.getInterfaces.getClock.getTime, -mote.getInterfaces.getClock.getDrift)
+        timeSum(sig, start)
+    }
+  }
 
 
 
