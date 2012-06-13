@@ -214,10 +214,11 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
      * @param className fully qualified java classname
      * @return absolute path to jar file where class is included
      */
-    def jarPathOfClass(className: String) = {
+    def jarPathOfClass(className: String):String = {
       val resource = className.split('.').mkString("/", "/", ".class")
       val path = getClass.getResource(resource).getPath
       val indexOfFile = path.indexOf("file:")
+      if(indexOfFile == -1) return ""
       val indexOfSeparator = path.lastIndexOf('!')
       path.substring(indexOfFile, indexOfSeparator)
     }
