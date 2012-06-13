@@ -33,10 +33,13 @@ import se.sics.cooja._
 import de.fau.cooja.plugins.coojatrace.wrappers._
 import de.fau.cooja.plugins.coojatrace.memorywrappers._
 
-import se.sics.mspsim.core.CPUMonitor
 
 import se.sics.cooja.mspmote._ 
 import java.io.File
+
+import se.sics.mspsim.core.MemoryMonitor
+import se.sics.mspsim.core.Memory
+import se.sics.mspsim.core.RegisterMonitor
 
 
 
@@ -121,11 +124,13 @@ class MspMoteOnlyWrapper(mote: MspMote) {
     val es = new EventSource[String]
 
     // create watchpoint listener
-    val monitor = new CPUMonitor {
+    val monitor = new MemoryMonitor.Adapter {
 
-      def cpuAction(typ: Int , addr: Int ,data: Int ) {
-			es fire name
-		}
+      override
+      def  notifyReadAfter(addr: Int,  mode: Memory.AccessMode , typ: Memory.AccessType){
+        es fire name
+      }
+      
       
     }
 
@@ -188,6 +193,7 @@ class MspMoteOnlyWrapper(mote: MspMote) {
  * Wrapper for a MSP mote CPU.
  */
 class MspMoteRichCPU(mote: MspMote) extends RichCPU {
+  
   def register(name: String): Signal[Int] = { 
     // get index if register name in reigster array
     val reg = se.sics.mspsim.core.MSP430Constants.REGISTER_NAMES.indexOf(name)
@@ -196,15 +202,18 @@ class MspMoteRichCPU(mote: MspMote) extends RichCPU {
     val v = Var[Int](mote.getCPU.reg(reg))
 
     // add register write monitor to update signal
-    mote.getCPU.setRegisterWriteMonitor(reg, new se.sics.mspsim.core.CPUMonitor() {
-      def cpuAction(t: Int, adr: Int, data: Int) {
+    val rwm = new se.sics.mspsim.core.RegisterMonitor.Adapter() {
+      override
+      def notifyWriteAfter(reg: Int, data: Int, mode: Int) {
         v.update(data)
       }
-    })
+    }
+    
+    mote.getCPU.addRegisterWriteMonitor(reg, rwm)
 
     // remove monitor on plugin deactivation
     CoojaTracePlugin.forSim(mote.getSimulation).onCleanUp {
-      mote.getCPU.setRegisterWriteMonitor(reg, null)
+      mote.getCPU.removeRegisterWriteMonitor(reg, rwm)
     }
 
     // return signal
@@ -238,25 +247,11 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
     val v = Var[T](updateFun(addr))
     
     // monitor for variable addresses
-    val cpuMonitor = new CPUMonitor() {
-      def cpuAction(t: Int, adr: Int, data: Int) {
-        // ignore everything except writes
-        if(t != CPUMonitor.MEMORY_WRITE) return
+    val cpuMonitor = new MemoryMonitor.Adapter {
 
-        // NOTE: this method is called _before_ the actual memory is changed,
-        // so we need to wait until the memory write is completed before reading the memory
-        // a program counter monitor is used for this, as this should be incremented next
-        // this slightly increases the time at which the change is registered
-        val regPC = se.sics.mspsim.core.MSP430Constants.REGISTER_NAMES.indexOf("PC")
-        mote.getCPU.addRegisterWriteMonitor(regPC, new CPUMonitor() {
-          //
-          def cpuAction(t: Int, adr: Int, data: Int) {
-            // update signal
-            v.update(updateFun(addr))
-            // restore previous PC monitor
-            mote.getCPU.removeRegisterWriteMonitor(regPC, this)
-          }
-        })
+      override
+      def  notifyWriteAfter(dstAddress: Int, data: Int, mode: Memory.AccessMode) {
+        v.update(updateFun(addr))
       }
     }
 
@@ -281,7 +276,9 @@ class MspMoteRichMemory(val mote: MspMote) extends RichMoteMemory {
     (bytes(1) << 8) + bytes(0)
   }
 
-  override def array(addr: Int, length: Int) = memory.getMemorySegment(addr, length)
+  override def array(addr: Int, length: Int) = {
+    memory.getMemorySegment(addr, length)
+  } 
 
 
   def addIntVar(addr: Int) = memVar(addr, int, 2)
