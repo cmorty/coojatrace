@@ -45,8 +45,8 @@ import interfacewrappers._
 import contikiwrappers._
 import mspwrappers._
 import generator._
-
-
+import jsyntaxpane.DefaultSyntaxKit
+import jsyntaxpane.actions.DefaultSyntaxAction._
 
 // speed up compilation
 class CoojaTrace
@@ -73,7 +73,19 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
   /**
    * Textarea for script code.
    */
-  val scriptCode = new JTextArea()
+  lazy val scriptCode:JEditorPane = new JEditorPane()
+  
+  /**
+   * jsyntaxpane kit - for later usage
+   */
+
+  lazy val skit:DefaultSyntaxKit = {
+    if (scriptCode.getEditorKit.isInstanceOf[DefaultSyntaxKit]) 
+        scriptCode.getEditorKit.asInstanceOf[DefaultSyntaxKit]
+    else
+      null
+  }
+  
 
   /**
    * Button to run/deactivate test script.
@@ -173,7 +185,14 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     buttonPanel.add(generatorButton)
     buttonPanel.add(referenceButton)
     add(buttonPanel, BorderLayout.PAGE_END)
+    
+    
     add(new JScrollPane(scriptCode), BorderLayout.CENTER)
+    
+    DefaultSyntaxKit.initKit();
+    scriptCode.setContentType("text/scala")
+    scriptCode.setText(scriptCode.getText)
+    
     setSize(600,400)
   
     // Propose to reload simulation when another classloader besides our own and cooja's is found
