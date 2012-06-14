@@ -50,10 +50,6 @@ import jsyntaxpane.actions.DefaultSyntaxAction._
 import scala.actors.Future
 import scala.actors.Futures._
 
-// speed up compilation
-class CoojaTrace
-
-
 
 /**
  * 
