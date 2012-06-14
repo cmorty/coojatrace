@@ -157,7 +157,7 @@ class GeneratorWindow(plugin: CoojaTracePlugin) extends JInternalFrame("Script G
     counter += 1
 
     // add code to script
-    plugin.scriptCode.append(codeWriter.getBuffer.toString)
+    plugin.scriptCode.setText(plugin.scriptCode.getText + codeWriter.getBuffer.toString)
   
     // focus CoojaTrace window
     try {
