@@ -47,6 +47,8 @@ import mspwrappers._
 import generator._
 import jsyntaxpane.DefaultSyntaxKit
 import jsyntaxpane.actions.DefaultSyntaxAction._
+import scala.actors.Future
+import scala.actors.Futures._
 
 // speed up compilation
 class CoojaTrace
@@ -97,7 +99,9 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
    * Initialized by `createInterpreter`
    */
   private var interpreter: scala.tools.nsc.interpreter.IMain = null
-
+  private var interpreter_prepared: Future[scala.tools.nsc.interpreter.IMain] = null
+  
+  
   /**
    * Status variable showing whether script has been run and is active.
    */
@@ -117,6 +121,10 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
   // Constructor:
   // create Swing elements if run with GUI
   if(GUI.isVisualized) createGUI()
+  // prepare interpreter
+  prepareInterpreter()
+  
+  
 
   /**
    * Window for API reference.
@@ -223,9 +231,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     // import interpreter classes
     import scala.tools.nsc._
     import scala.tools.nsc.interpreter._
-    
-    GUI.setProgressMessage("Compiling Scala"); 
-    
+       
     val settings = new Settings()
     
     /**
@@ -257,36 +263,28 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     // create new scala interpreter with classpath and write output to System.out
     new IMain(settings, pwriter)
   }
-
+  
   /**
-   * Returns plugin status.
-   * @return `true` if script has been run and is active
+   * Initialize the interpreter
+   * Mainly adds imports
    */
-  def isActive = active
 
-  /**
-   * Activate plugin by running test script.
-   */
-  def activate() {
-    // create interpreter
-    interpreter = createInterpreter()
-
+  private def initInterpreter(interpreter:scala.tools.nsc.interpreter.IMain){
     // import cooja and coojatrace classes
-    interpreter.interpret("""
-      import reactive._
+    interpreter.addImports(
+      "reactive._",
 
-      import se.sics.cooja._
-      import interfaces._
-      
-      import de.fau.cooja.plugins.coojatrace._
-      import wrappers._
-      import interfacewrappers._
-      import magicsignals._
-      import memorywrappers._
-      import rules.assertions._
-      import rules.logrules._
-      import operators._
-    """)
+      "se.sics.cooja._",
+      "interfaces._",
+
+      "de.fau.cooja.plugins.coojatrace._",
+      "wrappers._",
+      "interfacewrappers._",
+      "magicsignals._",
+      "memorywrappers._",
+      "rules.assertions._",
+      "rules.logrules._",
+      "operators._")
     
     // load and register contikimote wrappers if available
     try {
@@ -311,7 +309,37 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     } catch {
       case e: Exception => logger.warn("MspMote wrappers not loaded.")
     }
+  }
+  
+  
+  /**
+   * Creates an new Future to interpreter_prepared 
+   */
+  def prepareInterpreter(){
+    interpreter_prepared = future {
+	    val interpreter = createInterpreter()
+	    initInterpreter(interpreter)
+	    interpreter
+    }
+  }
+  
+  
+  /**
+   * Returns plugin status.
+   * @return `true` if script has been run and is active
+   */
+  def isActive = active
 
+  /**
+   * Activate plugin by running test script.
+   */
+  def activate() {
+    GUI.setProgressMessage("Compiling Scala"); 
+    
+    //Get future
+    interpreter = interpreter_prepared()
+
+    
     // make the simulation object available to test code
     interpreter.bind("sim", sim.getClass.getName, sim)
     
@@ -326,7 +354,6 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
 
     // ignore output so far
     errorWriter.getBuffer.setLength(0)
-    
     // interpret test script
     val res = interpreter.interpret(scriptCode.getText())
 
@@ -362,6 +389,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
         deactivate()
       }
     }
+    prepareInterpreter()
   }
 
   /**
