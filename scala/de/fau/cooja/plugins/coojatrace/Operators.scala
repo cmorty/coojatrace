@@ -290,7 +290,7 @@ private case class TimeSumState(last: Long, sum: Long)
      * @param sig [[Signal]] of which time durations are summed
      * @return [[Signal]] of duration sig was ``true`` in microseconds
      */
-    def timeSum(sig: Signal[Boolean])(implicit sim: Simulation): Signal[Long] = timeSum(sig, 0)
+    def timeSum(sig: Signal[Boolean])(implicit sim: Simulation): Signal[Long] = timeSum(sig, sim.getSimulationTime)
 
     /**
      * Sums all time durations (in microseconds), during which the given boolean signal is ``true``.
@@ -321,7 +321,7 @@ private case class TimeSumState(last: Long, sum: Long)
       
     def timeSum(sig: Signal[Boolean], mote: Mote)(implicit sim: Simulation): Signal[Long] = {
         def max(x: Long, y: Long): Long = if (x < y) y else x
-        val start = max(mote.getInterfaces.getClock.getTime, -mote.getInterfaces.getClock.getDrift)
+        val start = max(sim.getSimulationTime, -mote.getInterfaces.getClock.getDrift)
         timeSum(sig, start)
     }
   }
