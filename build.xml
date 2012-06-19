@@ -2,8 +2,9 @@
 
 <project name="CoojaTrace" default="jar" basedir=".">
 
-	<property name="cooja" value="../.."/>
+	<property name="cooja" value="cooja"/>
 	<property name="cooja_jar"        value="${cooja}/dist/cooja.jar"/>
+	<property name="jsyntaxpane_jar"        value="${cooja}/lib/jsyntaxpane.jar"/>
 	<property name="mspsim_jar"       value="${cooja}/apps/mspsim/lib/mspsim.jar"/>
 	<property name="cooja_mspsim_jar" value="${cooja}/apps/mspsim/lib/cooja_mspsim.jar"/>
 
@@ -41,6 +42,7 @@
 				<pathelement location="${log4j_jar}"/>
 				<pathelement location="${mspsim_jar}"/>
 				<pathelement location="${cooja_mspsim_jar}"/>
+				<pathelement location="${jsyntaxpane_jar}"/>
 				<pathelement location="lib/scala-reactive.jar"/>
 				<pathelement location="lib/scala-library.jar"/>
 				<pathelement location="lib/scala-compiler.jar"/>
@@ -48,6 +50,26 @@
 		</scalac>
 	</target>
 
+	<target name="fcompile" depends="init">
+		<mkdir dir="build"/>
+		<fsc srcdir="scala" destdir="build" deprecation="yes" unchecked="yes" addparams="-Yclosure-elim -optimise" >
+			<classpath>
+				<pathelement location="build"/>
+				<pathelement location="${cooja_jar}"/>
+				<pathelement location="${jdom_jar}"/>
+				<pathelement location="${log4j_jar}"/>
+				<pathelement location="${mspsim_jar}"/>
+				<pathelement location="${cooja_mspsim_jar}"/>
+				<pathelement location="${jsyntaxpane_jar}"/>
+				<pathelement location="lib/scala-reactive.jar"/>
+				<pathelement location="lib/scala-library.jar"/>
+				<pathelement location="lib/scala-compiler.jar"/>
+			</classpath>
+		</fsc>
+	</target>
+	
+	
+	
 	<target name="docs" depends="init">
 		<mkdir dir="scaladoc"   />
 		<scaladoc
