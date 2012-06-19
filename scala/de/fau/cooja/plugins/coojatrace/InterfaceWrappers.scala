@@ -205,17 +205,29 @@ class RichRadio(val interface: Radio, sim: Simulation) extends RichInterface[Rad
    */
   lazy val interfered = observedSignal { interface.isInterfered }
   
+  
   /**
    * Get signal of mote radio receiver status.
    * @return boolean [[Signal]] of receiver status, `true` when receiver is on
    */
-  lazy val receiverOn = observedSignal { interface.isReceiverOn }
+  lazy val radioOn = observedSignal { 
+	  interface.isRadioOn 
+    }
+  
+  
+  /**
+   * Get signal of mote radio receiver status.
+   * @return boolean [[Signal]] of receiver status, `true` when receiver is on
+   */
+  lazy val receiverOn = observedSignal { 
+	   (interface.isRadioOn() && !interface.isTransmitting())
+    }
 
   /**
    * Get signal of mote radio reception status.
    * @return boolean [[Signal]] of reception status, `true` when receiving
    */
-  lazy val receiving = observedSignal { interface.isReceiving }
+  lazy val receiving = observedSignal {interface.isReceiving }
 
   /**
    * Get signal of mote radio transmission status.
