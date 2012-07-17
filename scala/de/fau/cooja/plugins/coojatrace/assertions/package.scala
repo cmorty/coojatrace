@@ -23,11 +23,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.fau.cooja.plugins.coojatrace
+package de.fau.cooja.plugins.coojatrace.rules
 
 
 import reactive._
-
+import de.fau.cooja.plugins.coojatrace._
 import se.sics.cooja.{Simulation, GUI}
 
 package object assertions {
