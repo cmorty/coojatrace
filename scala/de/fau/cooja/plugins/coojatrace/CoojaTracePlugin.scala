@@ -51,6 +51,9 @@ import scala.actors.Future
 import scala.actors.Futures._
 
 
+
+
+
 /**
  * 
  * The CoojaTrace Cooja-Plugin.
@@ -90,12 +93,19 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
    */
   val scriptButton = new JButton("Activate")
 
+  private class ctInterpreter(
+      val inter: scala.tools.nsc.interpreter.IMain, 
+      val ew: StringWriter, 
+      val pw: PrintWriter,
+      var error: Boolean = false
+      )
+
   /**
    * The scala interpreter.
    * Initialized by `createInterpreter`
    */
-  private var interpreter: scala.tools.nsc.interpreter.IMain = null
-  private var interpreter_prepared: Future[scala.tools.nsc.interpreter.IMain] = null
+  private var interpreter: ctInterpreter = null
+  private var interpreter_prepared: Future[ctInterpreter] = null
   
   
   /**
@@ -108,11 +118,6 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
    */
   private var cleanUpCallBacks = List[() => Unit]()
 
-  /**
-   * PrintWriter for interpreter output, goes to System.out (with autoflush)
-   */
-  private var errorWriter = new StringWriter
-  private var pwriter = new PrintWriter(errorWriter, true)
   
   // Constructor:
   // create Swing elements if run with GUI
@@ -257,17 +262,21 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     settings.bootclasspath.value = classPath.mkString(":")
     
     // create new scala interpreter with classpath and write output to System.out
-    new IMain(settings, pwriter)
+    val ew = new StringWriter
+    val pw = new PrintWriter(ew, true)
+    new ctInterpreter (new IMain(settings, pw),ew,pw)
   }
   
   /**
    * Initialize the interpreter
    * Mainly adds imports
+   * @return False if there were errors
    */
+  
+  private def initInterpreter(interpreter:ctInterpreter) = {
 
-  private def initInterpreter(interpreter:scala.tools.nsc.interpreter.IMain){
     // import cooja and coojatrace classes
-    interpreter.addImports(
+    val imp = interpreter.inter.addImports(
       "reactive._",
 
       "se.sics.cooja._",
@@ -281,15 +290,22 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
       "rules.assertions._",
       "rules.logrules._",
       "operators._")
-    
+    if(imp != scala.tools.nsc.interpreter.Results.Success){
+      interpreter.error = false;
+    }
+      
     // load and register contikimote wrappers if available
     try {
       Class.forName("se.sics.cooja.contikimote.ContikiMote", false, sim.getGUI.projectDirClassLoader)
 
-      interpreter.interpret("""
+      val cMote = interpreter.inter.interpret("""
         import contikiwrappers._
         contikiwrappers.register()
       """)
+	    if(cMote != scala.tools.nsc.interpreter.Results.Success){
+	      interpreter.error = true;
+	    }  
+      
     } catch {
       case e: Exception => logger.warn("ContikiMote wrappers not loaded.")
     }
@@ -298,10 +314,15 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     try {
       Class.forName("se.sics.cooja.mspmote.MspMote", false, sim.getGUI.projectDirClassLoader)
 
-      interpreter.interpret("""
+      val mspMote = interpreter.inter.interpret("""
         import mspwrappers._
         mspwrappers.register()
       """)
+      if(mspMote != scala.tools.nsc.interpreter.Results.Success){
+	      interpreter.error = true;
+	  }  
+      
+      
     } catch {
       case e: Exception => logger.warn("MspMote wrappers not loaded.")
     }
@@ -312,6 +333,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
    * Creates an new Future to interpreter_prepared 
    */
   def prepareInterpreter(){
+    GUI.setProgressMessage("Initializing Scala interpreter"); 
     interpreter_prepared = future {
 	    val interpreter = createInterpreter()
 	    initInterpreter(interpreter)
@@ -329,52 +351,12 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
   /**
    * Activate plugin by running test script.
    */
-  def activate() {
-    GUI.setProgressMessage("Compiling Scala"); 
+  def activate():Unit = {
     
-    //Get future
-    interpreter = interpreter_prepared()
-
-    
-    // make the simulation object available to test code
-    interpreter.bind("sim", sim.getClass.getName, sim)
-    
-    // define implicit vals for simulation, observing context, and MagicSignal deplog
-    interpreter.interpret("""
-      implicit val _simulation = sim
-      implicit val _observing = new Observing {}
-      implicit val _dyndeplog = new de.fau.cooja.plugins.coojatrace.magicsignals.DynamicDepLogger
-
-      Console.setOut(System.out)
-    """)
-
-    // ignore output so far
-    errorWriter.getBuffer.setLength(0)
-    // interpret test script
-    val res = interpreter.interpret(scriptCode.getText())
-
-    if(res == scala.tools.nsc.interpreter.Results.Success) {
-      // success, change status
-      logger.info("Script active")
-      scriptButton.setText("Reset")
-      scriptCode.setEnabled(false)
-      active = true
-    }
-    else if(res == scala.tools.nsc.interpreter.Results.Incomplete) {
-      // incomplete, show warning dialog
-      logger.error("Script incomplete!")
-
-      if(GUI.isVisualized) JOptionPane.showMessageDialog(GUI.getTopParentContainer,
-        "The test script is incomplete.\n\n" +
-        "This is most likely caused by an unmatched open (, [ or \"",
-        "Script incomplete", JOptionPane.WARNING_MESSAGE)
-    }
-    else {
-      // error, show error dialog
-      pwriter.flush()
-      val msg = errorWriter.toString
-
-      logger.error("Script error: " + msg)
+    def showComperror(out: String){
+      interpreter.pw.flush()
+      val msg = interpreter.ew.toString
+      logger.error(out + "\n" + msg)
       if(GUI.isVisualized) {
         val e = new Exception("Scala compilation error") {
           override def printStackTrace(stream: PrintStream) {
@@ -384,6 +366,68 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
         GUI.showErrorDialog(this, "Scala compilation error", e, false)
         deactivate()
       }
+    }
+    
+    
+    
+    GUI.setProgressMessage("Compiling Scala"); 
+    //Get future
+    interpreter = interpreter_prepared()
+    interpreter_prepared = null
+    
+    
+    // make the simulation object available to test code
+    interpreter.inter.bind("sim", sim.getClass.getName, sim)
+    
+    if(interpreter.error){
+    	showComperror("Scala interpreter initialisation error:")      
+    }
+    
+    if(!interpreter.error){
+	    // define implicit vals for simulation, observing context, and MagicSignal deplog
+	    val res = interpreter.inter.interpret("""
+	      implicit val _simulation = sim
+	      implicit val _observing = new Observing {}
+	      implicit val _dyndeplog = new de.fau.cooja.plugins.coojatrace.magicsignals.DynamicDepLogger
+	
+	      Console.setOut(System.out)
+	    """)
+	
+	    if(res != scala.tools.nsc.interpreter.Results.Success){
+	      showComperror("Scala environment initialisation error:")
+	      interpreter.error = true
+	    }
+    }
+    
+    
+    
+    if(!interpreter.error){
+        //Flush buffer from initialisation
+    	interpreter.ew.getBuffer.setLength(0)
+	    // interpret test script
+	    val res = interpreter.inter.interpret(scriptCode.getText())
+
+	    if(res == scala.tools.nsc.interpreter.Results.Success) {
+	      // success, change status
+	      logger.info("Script active")
+	      scriptButton.setText("Reset")
+	      scriptCode.setEnabled(false)
+	      active = true
+	    }
+	    else if(res == scala.tools.nsc.interpreter.Results.Incomplete) {
+	      // incomplete, show warning dialog
+	      logger.error("Script incomplete!")
+	
+	      if(GUI.isVisualized) JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+	        "The test script is incomplete.\n\n" +
+	        "This is most likely caused by an unmatched open (, [ or \"",
+	        "Script incomplete", JOptionPane.WARNING_MESSAGE)
+	    }
+	    else {
+	      // error, show error dialog
+	      interpreter.error = true
+	      showComperror("Scala compilation error") 
+	    }
     }
     prepareInterpreter()
   }
@@ -409,7 +453,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     RichMote.clearCache()
 
     // reset interpreter (clears all defined objects)
-    if(interpreter != null) interpreter.reset() // necessary?
+    if(interpreter != null) interpreter.inter.reset() // necessary?
 
     // delete interpreter instance
     interpreter = null
