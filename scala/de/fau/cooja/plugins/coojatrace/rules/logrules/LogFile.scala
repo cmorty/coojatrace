@@ -33,6 +33,7 @@ import reactive._
 
 import java.io.{BufferedWriter, FileWriter, PrintWriter}
 import java.util.{Observer, Observable}
+import java.util.concurrent.Semaphore
 
 import se.sics.cooja.Simulation
 
@@ -48,33 +49,59 @@ import se.sics.cooja.Simulation
  */
 case class LogFile(file: String, columns: List[String] = List("Value"), timeColumn: String = "Time", header: Boolean = true, sep: String = "\t")(implicit sim: Simulation) extends LogDestination {
   /**
+   * Logger.
+   */
+  val logger = org.apache.log4j.Logger.getLogger(this.getClass)
+  
+  
+  /**
+   * A Semaphore to limit the message queue
+   */
+  val sem = new Semaphore(100) 
+  
+  
+  /**
    * PrintWriter for writing to file
    */
   val stream = new PrintWriter(new BufferedWriter(new FileWriter(file)))
 
-  // active until file is closed
   var active = true
+  
 
   // all used columns
   val allColumns = if(timeColumn != null) (timeColumn :: columns) else columns
 
   // close file on plugin deactivation
+  case class Shutdown()
+  
   CoojaTracePlugin.forSim(sim).onCleanUp {
-    stream.close()
     active = false
+    writer ! new Shutdown    
   }
+  
+  
 
     //Use actor to write to file
   import scala.actors._
   object writer extends Actor {
     def act() {
-      loopWhile(active){
+      var shutdown = false
+      //We need to react, while we are waiting, but shutdown
+      //when done.
+      loopWhile(!shutdown){
         react {
-          case str:String => {stream println str}
-          case _ => {println("Something went wrong here!")}
+          case str:String => {
+            stream println str
+            sem.release()
+          }
+          case sd:Shutdown => {shutdown = false}
+          case _ => {logger.error("Something went wrong here!")}
         }
       }
+      logger.info("Closing " + file);
+      stream.close()
     }
+   
   }
   
   writer.start()
@@ -92,6 +119,10 @@ case class LogFile(file: String, columns: List[String] = List("Value"), timeColu
   def log(values: List[_]) {
     // join values (and time if enabled) with seperator and print 
     val out = if(timeColumn != null) (sim.getSimulationTime :: values) else values
+    if (!sem.tryAcquire()){
+	    logger.warn("The Harddisk is slowing us down")
+	    sem.acquire() //Make sure we slow things down until we get a semaphore
+	}
     writer ! out.mkString(sep)
   }
 }
