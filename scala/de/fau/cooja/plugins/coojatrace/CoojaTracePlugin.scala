@@ -98,7 +98,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
       val ew: StringWriter, 
       val pw: PrintWriter,
       var error: Boolean = false
-      )
+   )
 
   /**
    * The scala interpreter.
@@ -334,6 +334,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
    */
   def prepareInterpreter(){
     GUI.setProgressMessage("Initializing Scala interpreter"); 
+    logger.info("Preparing interpreter")
     interpreter_prepared = future {
 	    val interpreter = createInterpreter()
 	    initInterpreter(interpreter)
@@ -368,11 +369,15 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
       }
     }
     
+    if(active){
+    	logger.warn("Script has been activated twice. Something went wrong here")
+    	return
+    }
     
-    
+    val startTime = System.currentTimeMillis()
     GUI.setProgressMessage("Compiling Scala"); 
     //Get future
-    interpreter = interpreter_prepared()
+    interpreter = interpreter_prepared.apply()
     interpreter_prepared = null
     
     
@@ -429,7 +434,14 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
 	      showComperror("Scala compilation error") 
 	    }
     }
-    prepareInterpreter()
+    //Only prepare a new interpreter if everything is visualized
+    if(GUI.isVisualized) {
+    	prepareInterpreter()
+    }
+    
+    val stopTime = System.currentTimeMillis();
+    logger.info("Scala compile time: " + (stopTime - startTime).toString +  "ms");
+    
   }
 
   /**
@@ -466,6 +478,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
 
     // save new status
     active = false
+    
   }
 
   /**
@@ -514,7 +527,7 @@ class CoojaTracePlugin(val sim: Simulation, val gui: GUI) extends VisPlugin("Coo
     }
 
     // auto-activate when run without GUI
-    if(!GUI.isVisualized) {
+    if(!GUI.isVisualized && active == false) {
       activate()
     }
 
