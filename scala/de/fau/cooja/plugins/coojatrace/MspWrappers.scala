@@ -204,7 +204,7 @@ class MspMoteRichCPU(mote: MspMote) extends RichCPU {
     // add register write monitor to update signal
     val rwm = new se.sics.mspsim.core.RegisterMonitor.Adapter() {
       override
-      def notifyWriteAfter(reg: Int, data: Int, mode: Int) {
+      def notifyWriteAfter(reg: Int, data: Int, mode: Memory.AccessMode) {
         v.update(data)
       }
     }
