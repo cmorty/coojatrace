@@ -31,7 +31,7 @@ import reactive._
 
 import java.util.{Observable, Observer}
 
-import se.sics.cooja._
+import org.contikios.cooja._
 import interfaces._
 
 import de.fau.cooja.plugins.coojatrace._
@@ -428,7 +428,7 @@ class RichRadioMedium(val radioMedium: RadioMedium)(implicit val simulation: Sim
    * @return [[Signal]] of a list of active radio connections
    */
   lazy val connections = SeqSignal( observedSignal {
-    radioMedium.asInstanceOf[se.sics.cooja.radiomediums.AbstractRadioMedium].getActiveConnections.toList
+    radioMedium.asInstanceOf[org.contikios.cooja.radiomediums.AbstractRadioMedium].getActiveConnections.toList
   })
 
   /**
@@ -511,11 +511,11 @@ class RichMoteRelations(val simulation: Simulation) extends RichObservable {
    * Get a list of all Mote2Mote relations in this simulation.
    * @return [[SeqSignal]] of a list of Mote2Mote relations
    */
-  lazy val relations = SeqSignal( observedSignal { simulation.getGUI.getMoteRelations.toList } )
+  lazy val relations = SeqSignal( observedSignal { simulation.getCooja.getMoteRelations.toList } )
 
   // uses different observer functions
-  def addObserver(o: Observer) { simulation.getGUI.addMoteRelationsObserver(o) }
-  def removeObserver(o: Observer) { simulation.getGUI.deleteMoteRelationsObserver(o) }
+  def addObserver(o: Observer) { simulation.getCooja.addMoteRelationsObserver(o) }
+  def removeObserver(o: Observer) { simulation.getCooja.deleteMoteRelationsObserver(o) }
 }
 
 } // package wrappers

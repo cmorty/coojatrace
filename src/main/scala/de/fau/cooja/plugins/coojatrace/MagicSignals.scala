@@ -29,7 +29,7 @@ package de.fau.cooja.plugins.coojatrace
 
 import reactive._
 import scala.util.DynamicVariable
-import se.sics.cooja.motes.AbstractEmulatedMote
+import org.contikios.cooja.motes.AbstractEmulatedMote
 
 
 

@@ -10,3 +10,4 @@ coojatrace.jar
 hs_err*.log
 
 /.cache
+/target

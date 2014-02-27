@@ -31,8 +31,8 @@ import reactive._
 
 import java.util.{Observable, Observer}
 
-import se.sics.cooja._
-import se.sics.cooja.interfaces._
+import org.contikios.cooja._
+import org.contikios.cooja.interfaces._
 
 import de.fau.cooja.plugins.coojatrace.wrappers._
 

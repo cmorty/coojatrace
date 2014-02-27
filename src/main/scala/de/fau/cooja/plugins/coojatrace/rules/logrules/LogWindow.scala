@@ -30,7 +30,7 @@ import de.fau.cooja.plugins.coojatrace.CoojaTracePlugin
 
 import javax.swing.{JInternalFrame, JTable, JScrollPane}
 
-import se.sics.cooja.Simulation
+import org.contikios.cooja.Simulation
 
 
 /**
@@ -73,7 +73,7 @@ case class LogWindow(name: String, columns: List[String] = List("Value"), timeCo
   window.add(new JScrollPane(table))
   window.setSize(300, 500)
   window.show()
-  sim.getGUI.getDesktopPane.add(window)
+  sim.getCooja.getDesktopPane.add(window)
   try {
     window.setSelected(true)
   } catch {

@@ -28,7 +28,7 @@ package de.fau.cooja.plugins.coojatrace.rules
 
 import reactive._
 import de.fau.cooja.plugins.coojatrace._
-import se.sics.cooja.{Simulation, GUI}
+import org.contikios.cooja.{Simulation, Cooja}
 
 package object assertions {
   /**
@@ -48,11 +48,11 @@ package object assertions {
         CoojaTracePlugin.forSim(sim).logger.info("ASSERTION: " + name + " is " + c)
         sim.stopSimulation() 
 
-        if(GUI.isVisualized) {
+        if(Cooja.isVisualized) {
           // show dialog if visualized
           javax.swing.SwingUtilities.invokeLater(new Runnable() {
             def run() {
-              javax.swing.JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+              javax.swing.JOptionPane.showMessageDialog(Cooja.getTopParentContainer,
                 "The following assertion failed and stopped the simulation:\n\n" + name,
                 "Assertion failed", javax.swing.JOptionPane.INFORMATION_MESSAGE)
             }
@@ -62,7 +62,7 @@ package object assertions {
           new Thread() {
             override def run() {
               try { Thread.sleep(500) } catch { case e: InterruptedException => }
-              sim.getGUI.doQuit(false)
+              sim.getCooja.doQuit(false)
             }
           }.start()
 

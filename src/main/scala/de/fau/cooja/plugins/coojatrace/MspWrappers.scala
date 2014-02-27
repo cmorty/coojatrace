@@ -29,12 +29,12 @@ package de.fau.cooja.plugins.coojatrace
 
 import reactive._
 
-import se.sics.cooja._
+import org.contikios.cooja._
 import de.fau.cooja.plugins.coojatrace.wrappers._
 import de.fau.cooja.plugins.coojatrace.memorywrappers._
 
 
-import se.sics.cooja.mspmote._ 
+import org.contikios.cooja.mspmote._ 
 import java.io.File
 
 import se.sics.mspsim.core.MemoryMonitor
@@ -108,7 +108,7 @@ class MspMoteOnlyWrapper(mote: MspMote) {
    */
   def watchpoint(filename: String, line: Int, name: String = null): EventStream[String] = {
     // get file from filename
-    val file = mote.getSimulation.getGUI.restorePortablePath(new java.io.File(filename))
+    val file = mote.getSimulation.getCooja.restorePortablePath(new java.io.File(filename))
 
     // calculate executable address from file and line
     val addr = mote.getExecutableAddressOf(file, line)

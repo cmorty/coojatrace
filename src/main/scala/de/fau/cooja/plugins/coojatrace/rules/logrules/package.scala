@@ -27,7 +27,7 @@ package de.fau.cooja.plugins.coojatrace.rules
 
 import reactive._
 
-import se.sics.cooja.Simulation
+import org.contikios.cooja.Simulation
 
 package object logrules {
   /**

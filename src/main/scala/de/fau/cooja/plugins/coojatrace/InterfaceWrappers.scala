@@ -27,7 +27,7 @@ package de.fau.cooja.plugins.coojatrace
 
 
 
-import se.sics.cooja._
+import org.contikios.cooja._
 import interfaces._
 
 import de.fau.cooja.plugins.coojatrace.wrappers._

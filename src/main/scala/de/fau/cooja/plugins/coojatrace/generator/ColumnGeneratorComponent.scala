@@ -32,7 +32,7 @@ import javax.swing._
 import java.awt.{List => _, _}
 import java.awt.event.{ActionListener, ActionEvent, ItemListener, ItemEvent}
 
-import se.sics.cooja.{GUI}
+import org.contikios.cooja.Cooja
 
 
 /**
@@ -161,7 +161,7 @@ trait ColumnGeneratorComponent { this: GeneratorWindow =>
         val operator = operatorGenerators.find(_.name == value.asInstanceOf[String]).get
         if(operator.alwaysEventStream && (columns(row) != columns.head) && (columns.head._2.eventStream || columns.head._4.alwaysEventStream)) {
           // more than one eventstream cannot be logged, show error and do nothing
-          JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+          JOptionPane.showMessageDialog(Cooja.getTopParentContainer,
             "You cannot use more than one event stream in a log rule.\n\n" +
             "Using this operator turns this column into an event stream, which is already present.", 
             "Event stream conflict", JOptionPane.WARNING_MESSAGE) 
@@ -263,7 +263,7 @@ trait ColumnGeneratorComponent { this: GeneratorWindow =>
       if(colType.eventStream) {
         if(!columns.isEmpty && (columns.head._2.eventStream || columns.head._4.alwaysEventStream)) {
           // more than one eventstream cannot be logged, show error and do nothing
-          JOptionPane.showMessageDialog(GUI.getTopParentContainer,
+          JOptionPane.showMessageDialog(Cooja.getTopParentContainer,
             "You cannot use more than one event stream in a log rule.\n",
             "Event stream conflict", JOptionPane.WARNING_MESSAGE) 
           return

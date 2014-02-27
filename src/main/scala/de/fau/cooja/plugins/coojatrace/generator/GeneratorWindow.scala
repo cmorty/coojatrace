@@ -87,7 +87,7 @@ class GeneratorWindow(plugin: CoojaTracePlugin) extends JInternalFrame("Script G
   setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE)
 
   // add window to dekstop
-  plugin.sim.getGUI.getDesktopPane.add(this)
+  plugin.sim.getCooja.getDesktopPane.add(this)
 
   /**
    * Get a (name -> value) map from an options panel.

@@ -29,7 +29,7 @@ package de.fau.cooja.plugins.coojatrace
 
 import reactive._
 
-import se.sics.cooja._
+import org.contikios.cooja._
 
 
 

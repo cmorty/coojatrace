@@ -35,7 +35,7 @@ import java.io.{BufferedWriter, FileWriter, PrintWriter}
 import java.util.{Observer, Observable}
 import java.util.concurrent.Semaphore
 
-import se.sics.cooja.Simulation
+import org.contikios.cooja.Simulation
 
 /**
  * A [[LogDestination]] which writes into a file.

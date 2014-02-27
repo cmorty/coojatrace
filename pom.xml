@@ -48,7 +48,23 @@
 			<scope>system</scope>
 			<systemPath>${project.basedir}/cooja/dist/lib/jsyntaxpane.jar</systemPath>
 		</dependency>
-	</dependencies>
+		<dependency>
+			<groupId>org.contikios</groupId>
+			<artifactId>mspmote</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/cooja/apps/mspsim/lib/cooja_mspsim.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.contikios</groupId>
+			<artifactId>mspsim</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/cooja/apps/mspsim/lib/mspsim.jar</systemPath>
+		</dependency>
+
+
+		</dependencies>
 	<build>
 		<plugins>
 			<plugin>
