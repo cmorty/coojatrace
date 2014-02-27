@@ -83,7 +83,7 @@ package object logrules {
    */
   implicit def forwardLog[T](implicit sim: Simulation, m: Manifest[T]) =
     new CanForward[LogDestination, T] {
-      def forward(s: Forwardable[T], dest: => LogDestination)(implicit o: Observing) {
+      def forward(s: Forwardable[T, _], dest: => LogDestination)(implicit o: Observing) {
         s match { // match because of overloaded log(...)
           case sig: Signal[_] => log(dest, sig)
           case es: EventStream[_] => log(dest, es.asInstanceOf[EventStream[T]])
