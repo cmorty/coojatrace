@@ -77,7 +77,7 @@ trait DestinationGeneratorComponent { this: GeneratorWindow =>
           Class.forName("de.fau.cooja.plugins.coojatrace.rules.logrules.sqlitelog.LogTable")
           true
         } catch {
-          case _ => false
+          case _:Throwable => false
         }
       } 
     }
