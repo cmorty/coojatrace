@@ -33,8 +33,10 @@ import java.util.{Observable, Observer}
 
 import org.contikios.cooja._
 import org.contikios.cooja.interfaces._
+import org.contikios.cooja.mote.memory._
 
 import de.fau.cooja.plugins.coojatrace.wrappers._
+import scala.collection.JavaConversions._
 
 
 
@@ -86,7 +88,7 @@ trait MemVarType[+T] {
  */
 object CInt extends MemVarType[Int] {
   val name = "int"
-  def size(mem: RichMoteMemory) = mem.memory.getIntegerLength
+  def size(mem: RichMoteMemory) = mem.memory.getLayout.intSize
   def get(addr: Int, mem: RichMoteMemory): Signal[Int] = mem.addVariable(addr, this, mem.addIntVar)
 }
 
@@ -95,7 +97,7 @@ object CInt extends MemVarType[Int] {
  */
 object CPointer extends MemVarType[Int] {
   val name = "*void"
-  def size(mem: RichMoteMemory) = mem.memory.getIntegerLength
+  def size(mem: RichMoteMemory) = mem.memory.getLayout.addrSize
   def get(addr: Int, mem: RichMoteMemory): Signal[Int] = mem.addVariable(addr, this, mem.addPointerVar)
 }
 
@@ -276,15 +278,17 @@ trait RichMoteMemory {
   /**
    * the wrapped memory.
    */
-  def memory: AddressMemory
+  val memory: MemoryInterface
+  
+  lazy val varMemory = new VarMemory(memory);
 
   /**
    * Get mote variable names and addresses.
    * @return map of (address -> variablename) elements
    */
   lazy val varAddresses = {
-    memory.getVariableNames.map {
-      name => (memory.getVariableAddress(name), name)
+    varMemory.getVariableNames.map {
+      name => (varMemory.getVariableAddress(name), name)
     }.toMap
   }
 
@@ -339,7 +343,8 @@ trait RichMoteMemory {
    * @tparam scala type of variable
    */
   def variable[T](name: String, typ: MemVarType[T]): MemVar[T] =
-    variable[T](memory.getVariableAddress(name), typ)
+  	//TODO: The memory addresses should eventually be chaged to Long
+    variable[T](varMemory.getVariableAddress(name).toInt, typ)
 
 
   /**
@@ -378,7 +383,7 @@ trait RichMoteMemory {
    * @param name name of variable
    * @return byte value of variable
    */
-  def byte(name: String) = memory.getByteValueOf(name)
+  def byte(name: String) = varMemory.getByteValueOf(name)
 
   /**
    * Get value of byte variable at address.
@@ -395,7 +400,7 @@ trait RichMoteMemory {
    * @param name name of variable
    * @return integer value of variable
    */
-  def int(name: String) = memory.getIntValueOf(name)
+  def int(name: String) = varMemory.getIntValueOf(name)
   
   /**
    * Get value of integer variable at address.
@@ -433,7 +438,7 @@ trait RichMoteMemory {
    * @param length length of array in bytes
    * @return byte array from memory
    */
-  def array(name: String, length: Int) = memory.getByteArray(name, length)
+  def array(name: String, length: Int) = varMemory.getByteArray(name, length)
 
   /**
    * Get byte array of specified length at address.

@@ -447,8 +447,8 @@ class RichRadioMedium(val radioMedium: RadioMedium)(implicit val simulation: Sim
   }.filter(_ != null)
 
   // uses different observer functions
-  def addObserver(o: Observer) { radioMedium.addRadioMediumObserver(o) }
-  def removeObserver(o: Observer) { radioMedium.deleteRadioMediumObserver(o) }
+  def addObserver(o: Observer) { radioMedium.addRadioTransmissionObserver(o) }
+  def removeObserver(o: Observer) { radioMedium.deleteRadioTransmissionObserver(o) }
 }
 
 object RichRadioMedium {

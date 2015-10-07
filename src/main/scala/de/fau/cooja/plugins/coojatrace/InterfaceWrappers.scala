@@ -350,7 +350,7 @@ class RichIPAddress(val interface: IPAddress, val simulation: Simulation) extend
    * Get signal of mote IP address.
    * @return [[Signal]] of mote IP address as string
    */
-  lazy val ipAddress = observedSignal { interface.getIPString }
+  lazy val ipAddress = observedSignal { interface.getLocalIP.toString }
 }
 
 

@@ -34,6 +34,7 @@ import de.fau.cooja.plugins.coojatrace.wrappers._
 import de.fau.cooja.plugins.coojatrace.memorywrappers._
 
 import org.contikios.cooja.contikimote._
+import org.contikios.cooja.mote.memory._
 import org.contikios.cooja.interfaces._
 
 
@@ -169,7 +170,7 @@ class ContikiMoteRichMemory(val mote: ContikiMote) extends RichMoteMemory {
   /**
    * Mote memory.
    */
-  lazy val memory = mote.getMemory.asInstanceOf[AddressMemory]
+  lazy val memory = mote.getMemory
 
 
   def addIntVar(addr: Int) = memoryInterface.addVar(addr, int)
