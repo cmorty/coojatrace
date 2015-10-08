@@ -3,8 +3,53 @@
 	<groupId>de.fau.cooja.plugins</groupId>
 	<artifactId>CoojaTracePlugin</artifactId>
 	<version>1.0.0</version>
+	<properties>
+		<cooja.path>${project.basedir}/cooja</cooja.path>
+	</properties>
 	<name>CoojaTrace</name>
-		<dependencies>
+	<dependencies>
+		<dependency>
+			<groupId>se.sics</groupId>
+			<artifactId>cooja</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${cooja.path}/dist/cooja.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org</groupId>
+			<artifactId>jdom</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${cooja.path}/dist/lib/jdom.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.apache</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.7</version>
+			<scope>system</scope>
+			<systemPath>${cooja.path}/dist/lib/log4j.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>jsyntaxpane</groupId>
+			<artifactId>SyntaxTester</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${cooja.path}/dist/lib/jsyntaxpane.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.contikios</groupId>
+			<artifactId>mspmote</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${cooja.path}/apps/mspsim/lib/cooja_mspsim.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.contikios</groupId>
+			<artifactId>mspsim</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${cooja.path}/apps/mspsim/lib/mspsim.jar</systemPath>
+		</dependency>
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-library</artifactId>
@@ -20,51 +65,8 @@
 			<artifactId>reactive-core_2.10</artifactId>
 			<version>0.3.0</version>
 		</dependency>
-		<dependency>
-			<groupId>se.sics</groupId>
-			<artifactId>cooja</artifactId>
-			<version>1.0.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/cooja/dist/cooja.jar</systemPath>
-		</dependency>
-		<dependency>
-			<groupId>org</groupId>
-			<artifactId>jdom</artifactId>
-			<version>1.0.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/cooja/dist/lib/jdom.jar</systemPath>
-		</dependency>
-		<dependency>
-			<groupId>org.apache</groupId>
-			<artifactId>log4j</artifactId>
-			<version>1.2.7</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/cooja/dist/lib/log4j.jar</systemPath>
-		</dependency>
-		<dependency>
-			<groupId>jsyntaxpane</groupId>
-			<artifactId>SyntaxTester</artifactId>
-			<version>1.0.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/cooja/dist/lib/jsyntaxpane.jar</systemPath>
-		</dependency>
-		<dependency>
-			<groupId>org.contikios</groupId>
-			<artifactId>mspmote</artifactId>
-			<version>1.0.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/cooja/apps/mspsim/lib/cooja_mspsim.jar</systemPath>
-		</dependency>
-		<dependency>
-			<groupId>org.contikios</groupId>
-			<artifactId>mspsim</artifactId>
-			<version>1.0.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/cooja/apps/mspsim/lib/mspsim.jar</systemPath>
-		</dependency>
 
-
-		</dependencies>
+	</dependencies>
 	<build>
 		<plugins>
 			<plugin>
@@ -90,7 +92,7 @@
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>2.4</version>
 			</plugin>
-		</plugins>		
+		</plugins>
 	</build>
 	<repositories>
 		<repository>
