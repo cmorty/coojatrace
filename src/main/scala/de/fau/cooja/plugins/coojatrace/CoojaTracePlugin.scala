@@ -251,7 +251,7 @@ class CoojaTracePlugin(val sim: Simulation, val cooja: Cooja) extends VisPlugin(
     
     // external classes not loaded by plugins
     val classes = scala.List(
-      "org.apache.log4j.Logger", "org.jdom.Element", "se.sics.cooja.GUI"
+      "org.apache.log4j.Logger", "org.jdom.Element", "org.contikios.cooja.Cooja"
     )
     
     // assemble JAR path
@@ -279,7 +279,7 @@ class CoojaTracePlugin(val sim: Simulation, val cooja: Cooja) extends VisPlugin(
     val imp = interpreter.inter.addImports(
       "reactive._",
 
-      "se.sics.cooja._",
+      "org.contikios.cooja._",
       "interfaces._",
 
       "de.fau.cooja.plugins.coojatrace._",
@@ -312,7 +312,7 @@ class CoojaTracePlugin(val sim: Simulation, val cooja: Cooja) extends VisPlugin(
 
     // load and register mspmote wrappers if available
     try {
-      Class.forName("se.sics.cooja.mspmote.MspMote", false, sim.getCooja.projectDirClassLoader)
+      Class.forName("org.contikios.cooja.mspmote.MspMote", false, sim.getCooja.projectDirClassLoader)
 
       val mspMote = interpreter.inter.interpret("""
         import mspwrappers._
